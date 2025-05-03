@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/types"
 
@@ -19,7 +19,7 @@ export function useCurrentUser() {
     const fetchUser = async () => {
       try {
         setLoading(true)
-        const supabase = createClient()
+        // use singleton
 
         // Obter a sessão atual
         const {
@@ -80,7 +80,7 @@ export function useCurrentUser() {
     fetchUser()
 
     // Configurar listener para mudanças de autenticação
-    const supabase = createClient()
+    // use singleton
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {

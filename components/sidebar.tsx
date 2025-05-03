@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -37,7 +37,6 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange }: Sid
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {

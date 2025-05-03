@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -71,8 +71,6 @@ export default function SignupPage() {
       if (password.length < 8) {
         throw new Error("A senha deve ter pelo menos 8 caracteres")
       }
-
-      const supabase = createClient()
 
       // Verificar se o email já está em uso
       const { data: emailCheckData, error: emailCheckError } = await supabase

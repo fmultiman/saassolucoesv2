@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,8 +29,6 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const supabase = createClient()
-
       console.log("Iniciando login com email:", email)
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -99,7 +97,6 @@ export default function LoginPage() {
         return
       }
 
-      const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       })
