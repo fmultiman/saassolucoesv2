@@ -13,7 +13,7 @@ import { Loader2, CuboidIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 const formSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -25,7 +25,6 @@ export default function AdminLoginPage() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo") || "/admin"
 
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)

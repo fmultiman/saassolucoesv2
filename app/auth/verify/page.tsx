@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
@@ -26,8 +26,6 @@ export default function VerifyPage() {
         }
 
         console.log("Código de verificação encontrado:", code)
-
-        const supabase = createClient()
 
         // Usar o método correto para trocar o código por uma sessão
         const { error } = await supabase.auth.exchangeCodeForSession(code)

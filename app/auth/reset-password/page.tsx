@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -37,8 +37,6 @@ export default function ResetPasswordPage() {
         }
 
         // Verificar se o token é válido
-        const supabase = createClient()
-
         // Apenas verificamos se conseguimos obter a sessão
         // O Supabase não tem um método específico para validar o token
         const { data, error } = await supabase.auth.getSession()
@@ -76,8 +74,6 @@ export default function ResetPasswordPage() {
       if (password.length < 8) {
         throw new Error("A senha deve ter pelo menos 8 caracteres")
       }
-
-      const supabase = createClient()
 
       // Atualizar a senha
       const { error } = await supabase.auth.updateUser({

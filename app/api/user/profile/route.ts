@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { z } from "zod"
 
@@ -29,7 +29,8 @@ const profileUpdateSchema = z
 
 export async function PUT(request: Request) {
   try {
-    const supabase = createClient(cookies())
+    const cookiesStore = cookies()
+    const supabase = createServerClient(cookiesStore)
 
     // Verificar autenticação
     const {
@@ -99,7 +100,8 @@ export async function PUT(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const supabase = createClient(cookies())
+    const cookiesStore = cookies()
+    const supabase = createServerClient(cookiesStore)
 
     // Verificar autenticação
     const {
@@ -140,6 +142,4 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("Erro ao processar requisição:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
-  }
-}
+    return Next

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useToast } from "@/components/ui/use-toast"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ProfileForm } from "@/components/profile-form"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -21,7 +21,6 @@ export default function AdminProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const { toast } = useToast()
-  const supabase = createClient()
   const router = useRouter()
 
   // Verificar periodicamente se a sessão ainda é válida

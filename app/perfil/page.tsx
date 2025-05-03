@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, User, Briefcase, MapPin, Mail } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { EmailChangeForm } from "@/components/email-change-form"
@@ -20,7 +20,6 @@ import { EmailChangeForm } from "@/components/email-change-form"
 export default function PerfilPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
