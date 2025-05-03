@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useSearchParams } from "next/navigation"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -14,6 +15,12 @@ import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
+  const planParam = searchParams.get("plan")
+  // Só aceita os planos válidos
+  const allowedPlans = ["gratuito", "essencial", "profissional", "completo"]
+  const plan = allowedPlans.includes(planParam || "") ? planParam : "gratuito"
+
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -90,6 +97,7 @@ export default function SignupPage() {
           emailRedirectTo: `${window.location.origin}/auth/verify`,
           data: {
             name: name,
+            plan: plan,
           },
         },
       })
@@ -109,6 +117,7 @@ export default function SignupPage() {
           email: email,
           user_type: "client",
           name: name,
+          plan: plan,
         },
       ])
 
