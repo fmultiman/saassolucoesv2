@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 import { AdminPostsList } from "@/components/admin/admin-posts-list"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
@@ -11,7 +12,7 @@ export const metadata = {
 }
 
 export default async function AdminPostsPage() {
-  const supabase = createClient()
+  const supabase = createServerClient(cookies())
 
   // Verificar se o usuário está autenticado
   const {

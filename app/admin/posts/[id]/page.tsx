@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 import { PostForm } from "@/components/admin/post-form"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -16,7 +17,7 @@ interface AdminPostEditPageProps {
 }
 
 export default async function AdminPostEditPage({ params }: AdminPostEditPageProps) {
-  const supabase = createClient()
+  const supabase = createServerClient(cookies())
 
   // Verificar se o usuário está autenticado
   const {
