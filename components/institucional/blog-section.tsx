@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import type { Post } from "@/lib/supabase/types"
 import { formatDate } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -10,10 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-// Inicialização direta do cliente Supabase para componentes do cliente
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import { supabase } from "@/lib/supabase/client"
 
 export function BlogSection() {
   const [posts, setPosts] = useState<Post[]>([])
@@ -24,19 +20,16 @@ export function BlogSection() {
     async function fetchRecentPosts() {
       try {
         console.log("Iniciando busca de posts recentes...")
-        console.log("URL do Supabase:", supabaseUrl)
-        console.log("Chave Anônima definida:", !!supabaseAnonKey)
+        console.log("URL do Supabase:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+        console.log("Chave Anônima definida:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
         // Verificar se as variáveis de ambiente estão definidas
-        if (!supabaseUrl || !supabaseAnonKey) {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           console.error("Variáveis de ambiente do Supabase não definidas")
           setError("Configuração incompleta. Entre em contato com o suporte.")
           setIsLoading(false)
           return
         }
-
-        // Criar cliente Supabase diretamente
-        const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey)
 
         // Buscar posts recentes com retry
         let attempts = 0
