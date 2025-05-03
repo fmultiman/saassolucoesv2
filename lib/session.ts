@@ -38,8 +38,8 @@ async function createSession(data: Omit<SessionData, "createdAt" | "lastActive">
   // Mapear usuário para sessões ativas
   await redis.sadd(`user_sessions:${data.userId}`, sessionId)
 
-  // Definir cookie de sessão
-  cookies().set("session_id", sessionId, {
+  const cookieStore = await cookies();
+  cookieStore.set("session_id", sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: SESSION_TTL,
@@ -52,7 +52,8 @@ async function createSession(data: Omit<SessionData, "createdAt" | "lastActive">
 
 // Obter sessão atual
 async function getCurrentUser(): Promise<SessionData | null> {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (!sessionId) {
     return null
@@ -102,13 +103,14 @@ async function updateSessionActivity(sessionId: string): Promise<void> {
 
 // Encerrar sessão
 async function destroySession(): Promise<void> {
-  const sessionId = cookies().get("session_id")?.value
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("session_id")?.value
 
   if (sessionId) {
     await destroySessionById(sessionId)
   }
 
-  cookies().delete("session_id")
+  cookieStore.delete("session_id")
 }
 
 // Encerrar sessão por ID
@@ -169,7 +171,12 @@ async function destroyAllUserSessions(userId: string, exceptCurrentSession = tru
     return 0
   }
 
-  const currentSessionId = exceptCurrentSession ? cookies().get("session_id")?.value : null
+  let currentSessionId: string | null = null;
+  if (exceptCurrentSession) {
+    const cookieStore = await cookies();
+    currentSessionId = cookieStore.get("session_id")?.value || null;
+  }
+
   let destroyedCount = 0
 
   for (const sessionId of sessionIds) {

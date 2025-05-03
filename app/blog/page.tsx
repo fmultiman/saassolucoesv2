@@ -3,7 +3,7 @@ import { BlogPostCard } from "@/components/blog/blog-post-card"
 import { cookies } from "next/headers"
 
 export default async function BlogPage() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies();
   const supabase = createServerClient(cookieStore)
 
   try {
