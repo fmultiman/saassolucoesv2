@@ -1,12 +1,14 @@
 // Configuração centralizada para autenticação com Supabase
 import { createClient } from "@supabase/supabase-js"
+import { getAuthRedirectUrls } from "./auth-helpers"
+
+// Obter URLs de redirecionamento
+const { emailRedirectTo } = getAuthRedirectUrls()
 
 // Constantes para configuração de autenticação
 export const SUPABASE_AUTH_CONFIG = {
   // Configurações de redirecionamento
-  redirectTo: process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/verify`
-    : "http://localhost:3000/auth/verify",
+  redirectTo: emailRedirectTo,
 
   // Configurações de cookies
   cookieOptions: {
@@ -18,18 +20,20 @@ export const SUPABASE_AUTH_CONFIG = {
   },
 
   // Configurações de email
-  emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/verify`
-    : "http://localhost:3000/auth/verify",
+  emailRedirectTo: emailRedirectTo,
 }
 
 // Função para criar um cliente Supabase com configurações padrão
 export function createAuthClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || "", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "", {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  })
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    }
+  )
 }

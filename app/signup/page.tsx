@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
-import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
+import { getAuthRedirectUrls, logAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
@@ -88,13 +88,14 @@ export default function SignupPage() {
         throw new Error("Este email já está em uso")
       }
 
-      // Registrar usuário
-      const { emailRedirectTo } = getAuthRedirectUrls()
+      // Obter URL de redirecionamento e logar para depuração
+      const { emailRedirectTo } = logAuthRedirectUrls()
+      console.log("URL de redirecionamento que será usada:", emailRedirectTo)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo,
+          emailRedirectTo: emailRedirectTo,
           data: {
             name: name,
             plan: plan,

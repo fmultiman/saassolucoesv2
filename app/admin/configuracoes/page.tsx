@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { AuthFixButton } from "@/components/admin/auth-fix-button"
 import { UserSyncFixButton } from "@/components/admin/user-sync-fix-button"
 import { AuthResetButton } from "@/components/admin/auth-reset-button"
+import { AuthRedirectDiagnostics } from "@/components/admin/auth-redirect-diagnostics"
 
 export const metadata: Metadata = {
   title: "Configurações | Admin",
@@ -21,6 +22,12 @@ export default function ConfiguracoesPage() {
             <UserSyncFixButton />
             <AuthResetButton />
           </div>
+        </div>
+
+        {/* Diagnóstico de autenticação */}
+        <div className="border rounded-lg p-6 bg-card mt-8">
+          <h2 className="text-xl font-semibold mb-4">Diagnóstico de Autenticação</h2>
+          <AuthRedirectDiagnostics />
         </div>
       </div>
     </div>
