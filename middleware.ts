@@ -42,7 +42,10 @@ export async function middleware(request: NextRequest) {
   // Redirecionamento para verificação de email
   // Se a URL contém ?code=... (Supabase confirmation link)
   if (request.nextUrl.searchParams.has("code")) {
-    return NextResponse.redirect(new URL("/auth/verify", request.url))
+    // Redireciona para /auth/verify mantendo o código na URL
+    const url = new URL("/auth/verify", request.url)
+    url.search = request.nextUrl.search // mantém todos os params, incluindo code
+    return NextResponse.redirect(url)
   }
 
   // Se for uma rota pública, permite o acesso sem verificação adicional

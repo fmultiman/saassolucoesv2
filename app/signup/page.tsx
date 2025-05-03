@@ -57,6 +57,10 @@ export default function SignupPage() {
     setPasswordStrength(strength)
   }, [password])
 
+  /**
+   * Handles the signup form submission.
+   * @param e The form event.
+   */
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -72,18 +76,14 @@ export default function SignupPage() {
         throw new Error("A senha deve ter pelo menos 8 caracteres")
       }
 
-      // Verificar se o email já está em uso
-      const { data: emailCheckData, error: emailCheckError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle()
-
-      if (emailCheckError) {
-        console.error("Erro ao verificar email:", emailCheckError)
-      }
-
-      if (emailCheckData) {
+      // Nova verificação de email via endpoint seguro (checa tabela users e auth)
+      const checkRes = await fetch("/api/users/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      const checkJson = await checkRes.json()
+      if (checkJson.exists) {
         throw new Error("Este email já está em uso")
       }
 
@@ -101,6 +101,15 @@ export default function SignupPage() {
       })
 
       if (signUpError) {
+        const msg = signUpError.message?.toLowerCase() || ""
+        if (
+          msg.includes("already registered") ||
+          msg.includes("already exists") ||
+          msg.includes("user already registered") ||
+          signUpError.status === 400
+        ) {
+          throw new Error("Este email já está em uso")
+        }
         throw signUpError
       }
 
@@ -223,10 +232,10 @@ export default function SignupPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cadastrando...
+                    Registrando...
                   </>
                 ) : (
-                  "Cadastrar"
+                  "Registrar"
                 )}
               </Button>
             </form>
