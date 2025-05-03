@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,12 +12,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ available: false, reason: "Usuário não autenticado" }, { status: 401 })
     }
 
-    const supabase = createServerClient()
+    const supabase = createServerClient(cookies())
 
     // Buscar o plano do usuário
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("plan_id")
+      .select("plan")
       .eq("id", userId)
       .single()
 
@@ -24,53 +25,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ available: false, reason: "Usuário não encontrado" }, { status: 404 })
     }
 
-    const userPlanId = userData.plan_id
-
-    // Se o usuário não tem plano, não tem acesso
-    if (!userPlanId) {
-      // Buscar o plano mais barato que inclui esta solução
-      const { data: cheapestPlan } = await supabase
-        .from("plans")
-        .select("id, name, price")
-        .in("id", supabase.from("plan_solutions").select("plan_id").eq("solution_id", solutionId))
-        .order("price", { ascending: true })
-        .limit(1)
-        .single()
-
-      return NextResponse.json({
-        available: false,
-        reason: "Você precisa ter um plano para acessar esta solução",
-        upgradePlan: cheapestPlan,
-      })
-    }
-
-    // Verificar se a solução está disponível no plano do usuário
-    const { data: planSolution, error: planSolutionError } = await supabase
+    // Buscar as soluções do plano
+    const { data: planSolutions, error: planSolutionsError } = await supabase
       .from("plan_solutions")
-      .select("*")
-      .eq("plan_id", userPlanId)
-      .eq("solution_id", solutionId)
-      .single()
+      .select("solution_id")
+      .eq("plan_id", userData.plan)
 
-    if (planSolutionError || !planSolution) {
-      // Buscar o plano mais barato que inclui esta solução
-      const { data: cheapestPlan } = await supabase
-        .from("plans")
-        .select("id, name, price")
-        .in("id", supabase.from("plan_solutions").select("plan_id").eq("solution_id", solutionId))
-        .order("price", { ascending: true })
-        .limit(1)
-        .single()
-
-      return NextResponse.json({
-        available: false,
-        reason: "Esta solução não está disponível no seu plano atual",
-        upgradePlan: cheapestPlan,
-      })
+    if (planSolutionsError) {
+      return NextResponse.json({ available: false, reason: "Erro ao buscar soluções do plano" }, { status: 500 })
     }
 
-    // Se chegou até aqui, a solução está disponível
-    return NextResponse.json({ available: true })
+    const isAvailable = planSolutions?.some((ps: any) => ps.solution_id === solutionId)
+
+    return NextResponse.json({ available: isAvailable })
   } catch (error) {
     console.error("Erro ao verificar disponibilidade:", error)
     return NextResponse.json({ available: false, reason: "Erro interno do servidor" }, { status: 500 })
