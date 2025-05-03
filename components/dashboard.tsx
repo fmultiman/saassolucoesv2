@@ -198,7 +198,7 @@ export function Dashboard() {
             <Skeleton className="h-10 w-[120px] mr-2" />
             <Skeleton className="h-10 w-[110px] mr-2" />
             <Skeleton className="h-10 w-[130px] mr-2" />
-            <Skeleton className="h-10 w-[100px]" mr-2 />
+            <Skeleton className="h-10 w-[100px] mr-2" />
             <Skeleton className="h-10 w-[130px] mr-2" />
             <Skeleton className="h-10 w-[100px]" />
           </div>
