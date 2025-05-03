@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 const emailChangeSchema = z.object({
   newEmail: z.string().email("Email inválido"),
@@ -25,7 +25,6 @@ export function EmailChangeForm({ currentEmail, onSuccess }: EmailChangeFormProp
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   const form = useForm<z.infer<typeof emailChangeSchema>>({
     resolver: zodResolver(emailChangeSchema),

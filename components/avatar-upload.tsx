@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Camera, Loader2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 
 interface AvatarUploadProps {
@@ -28,7 +28,6 @@ export function AvatarUpload({ currentAvatarUrl, userId, onAvatarChange, size = 
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
-  const supabase = createClient()
 
   // Garantir que temos o userId disponível
   useEffect(() => {

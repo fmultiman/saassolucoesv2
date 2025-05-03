@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 interface StorageDiagnosticsProps {
   userId?: string
@@ -14,7 +14,6 @@ export function StorageDiagnostics({ userId }: StorageDiagnosticsProps) {
   const [isChecking, setIsChecking] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   const checkStorage = async () => {
     setIsChecking(true)

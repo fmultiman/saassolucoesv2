@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CuboidIcon as Cube, Menu, X } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 interface SiteHeaderProps {
   currentPath?: string
@@ -14,7 +14,6 @@ interface SiteHeaderProps {
 export function SiteHeader({ currentPath = "/" }: SiteHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
