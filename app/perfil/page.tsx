@@ -17,6 +17,22 @@ import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { EmailChangeForm } from "@/components/email-change-form"
 
+interface Profile {
+  full_name: string
+  bio: string
+  phone: string
+  location: string
+  website: string
+  company: string
+  job_title: string
+  address: string
+  city: string
+  state: string
+  postal_code: string
+  country: string
+  avatar_url: string
+}
+
 export default function PerfilPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -24,20 +40,7 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>({
-    full_name: "",
-    bio: "",
-    phone: "",
-    location: "",
-    website: "",
-    company: "",
-    job_title: "",
-    address: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
-  })
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("personal")
 
@@ -96,7 +99,7 @@ export default function PerfilPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setProfile((prev) => ({ ...prev, [name]: value }))
+    setProfile((prev: Profile | null) => ({ ...prev, [name]: value }))
   }
 
   const handleSave = async () => {
@@ -129,7 +132,7 @@ export default function PerfilPage() {
 
   const handleAvatarUploaded = (url: string) => {
     setAvatarUrl(url)
-    setProfile((prev) => ({ ...prev, avatar_url: url }))
+    setProfile((prev: Profile | null) => ({ ...prev, avatar_url: url }))
   }
 
   if (loading) {
@@ -176,8 +179,8 @@ export default function PerfilPage() {
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={avatarUrl || ""} alt={profile.full_name} />
-                    <AvatarFallback>{profile.full_name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={avatarUrl || ""} alt={profile?.full_name} />
+                    <AvatarFallback>{profile?.full_name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <AvatarUpload onUploadComplete={handleAvatarUploaded} />
                 </div>
@@ -186,12 +189,12 @@ export default function PerfilPage() {
                   <div className="grid gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="full_name">Nome completo</Label>
-                      <Input id="full_name" name="full_name" value={profile.full_name || ""} onChange={handleChange} />
+                      <Input id="full_name" name="full_name" value={profile?.full_name || ""} onChange={handleChange} />
                     </div>
 
                     <div className="grid gap-2">
                       <Label htmlFor="bio">Biografia</Label>
-                      <Textarea id="bio" name="bio" value={profile.bio || ""} onChange={handleChange} rows={4} />
+                      <Textarea id="bio" name="bio" value={profile?.bio || ""} onChange={handleChange} rows={4} />
                     </div>
                   </div>
                 </div>
@@ -200,12 +203,12 @@ export default function PerfilPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" name="phone" value={profile.phone || ""} onChange={handleChange} />
+                  <Input id="phone" name="phone" value={profile?.phone || ""} onChange={handleChange} />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="location">Localização</Label>
-                  <Input id="location" name="location" value={profile.location || ""} onChange={handleChange} />
+                  <Input id="location" name="location" value={profile?.location || ""} onChange={handleChange} />
                 </div>
               </div>
             </CardContent>
@@ -234,12 +237,12 @@ export default function PerfilPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="job_title">Cargo</Label>
-                  <Input id="job_title" name="job_title" value={profile.job_title || ""} onChange={handleChange} />
+                  <Input id="job_title" name="job_title" value={profile?.job_title || ""} onChange={handleChange} />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="company">Empresa</Label>
-                  <Input id="company" name="company" value={profile.company || ""} onChange={handleChange} />
+                  <Input id="company" name="company" value={profile?.company || ""} onChange={handleChange} />
                 </div>
               </div>
 
@@ -249,7 +252,7 @@ export default function PerfilPage() {
                   id="website"
                   name="website"
                   type="url"
-                  value={profile.website || ""}
+                  value={profile?.website || ""}
                   onChange={handleChange}
                   placeholder="https://..."
                 />
@@ -279,18 +282,18 @@ export default function PerfilPage() {
             <CardContent className="space-y-6">
               <div className="grid gap-2">
                 <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={profile.address || ""} onChange={handleChange} />
+                <Input id="address" name="address" value={profile?.address || ""} onChange={handleChange} />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="city">Cidade</Label>
-                  <Input id="city" name="city" value={profile.city || ""} onChange={handleChange} />
+                  <Input id="city" name="city" value={profile?.city || ""} onChange={handleChange} />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="state">Estado</Label>
-                  <Input id="state" name="state" value={profile.state || ""} onChange={handleChange} />
+                  <Input id="state" name="state" value={profile?.state || ""} onChange={handleChange} />
                 </div>
               </div>
 
@@ -300,14 +303,14 @@ export default function PerfilPage() {
                   <Input
                     id="postal_code"
                     name="postal_code"
-                    value={profile.postal_code || ""}
+                    value={profile?.postal_code || ""}
                     onChange={handleChange}
                   />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="country">País</Label>
-                  <Input id="country" name="country" value={profile.country || ""} onChange={handleChange} />
+                  <Input id="country" name="country" value={profile?.country || ""} onChange={handleChange} />
                 </div>
               </div>
             </CardContent>

@@ -142,7 +142,7 @@ export function BlogSection() {
                   <div className="flex w-full items-center justify-between">
                     <span className="text-xs text-muted-foreground">{formatDate(post.data_publicacao || "")}</span>
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/blog/${post.slug}`}>Ler mais</Link>
+                      <Link href={post.url ?? undefined}>Ler mais</Link>
                     </Button>
                   </div>
                 </CardFooter>

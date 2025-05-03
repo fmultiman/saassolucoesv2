@@ -69,22 +69,18 @@ export async function middleware(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name) {
+          get(name: string): string | undefined {
             return request.cookies.get(name)?.value
           },
-          set(name, value, options) {
-            res.cookies.set({
-              name,
-              value,
-              ...options,
-            })
+          set(name: string, value: string, options?: Record<string, any>): void {
+            if (typeof (request.cookies as any).set === "function") {
+              (request.cookies as any).set({ name, value, ...options })
+            }
           },
-          remove(name, options) {
-            res.cookies.set({
-              name,
-              value: "",
-              ...options,
-            })
+          remove(name: string, options?: Record<string, any>): void {
+            if (typeof (request.cookies as any).set === "function") {
+              (request.cookies as any).set({ name, value: "", ...options })
+            }
           },
         },
       },
@@ -129,7 +125,7 @@ export async function middleware(request: NextRequest) {
       client: "/dashboard",
     }
     if (["/login", "/signup"].includes(pathname)) {
-      return NextResponse.redirect(new URL(redirectByRole[userType] || "/", request.url))
+      return NextResponse.redirect(new URL(redirectByRole[userType as keyof typeof redirectByRole] || "/", request.url))
     }
 
     return res
