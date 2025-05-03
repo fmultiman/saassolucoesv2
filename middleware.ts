@@ -32,21 +32,14 @@ export async function middleware(request: NextRequest) {
     "/auth/verify",
     "/auth/reset-password",
     "/recuperar-senha",
+    "/verificar-email",
+    "/email-verificado"
   ]
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 
   // Rotas específicas de admin
   const isAdminRoute = pathname.startsWith("/admin")
   const isAdminLoginRoute = pathname === "/login/admin"
-
-  // Redirecionamento para verificação de email
-  // Se a URL contém ?code=... (Supabase confirmation link)
-  if (request.nextUrl.searchParams.has("code")) {
-    // Redireciona para /auth/verify mantendo o código na URL
-    const url = new URL("/auth/verify", request.url)
-    url.search = request.nextUrl.search // mantém todos os params, incluindo code
-    return NextResponse.redirect(url)
-  }
 
   // Se for uma rota pública, permite o acesso sem verificação adicional
   if (isPublicRoute) {
