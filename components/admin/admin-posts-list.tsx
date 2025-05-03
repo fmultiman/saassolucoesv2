@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import {
   AlertDialog,
@@ -31,7 +31,6 @@ export function AdminPostsList({ posts: initialPosts }: AdminPostsListProps) {
   const [deletePostId, setDeletePostId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleDeletePost = async () => {
     if (!deletePostId) return

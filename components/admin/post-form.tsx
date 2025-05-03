@@ -1,7 +1,7 @@
 "use client"
 
 import type { Database } from "@/lib/supabase/types"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -44,7 +44,6 @@ interface PostFormProps {
 
 export function PostForm({ post }: PostFormProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
