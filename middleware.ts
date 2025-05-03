@@ -1,8 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Prefixos de rotas client-side (dashboard do cliente)
+  const clientPrefixes = [
+    "dashboard",
+    "conta",
+    "configuracoes",
+    "minhas-solucoes",
+    "assinatura",
+    "metricas",
+    "interacoes",
+    "proximos-envios",
+    "ajuda",
+    "perfil",
+    "solucao",
+    "solucoes",
+    "onboarding",
+  ]
+  const isClientRoute = clientPrefixes.some((prefix) => pathname.startsWith(`/${prefix}`))
 
   // Rotas que não precisam de autenticação
   const publicRoutes = [
@@ -10,8 +28,7 @@ export async function middleware(request: NextRequest) {
     "/login",
     "/signup",
     "/blog",
-    "/marketplace",
-    "/recursos-adicionais",
+    "/expansao",
     "/auth/verify",
     "/auth/reset-password",
     "/recuperar-senha",
@@ -21,23 +38,6 @@ export async function middleware(request: NextRequest) {
   // Rotas específicas de admin
   const isAdminRoute = pathname.startsWith("/admin")
   const isAdminLoginRoute = pathname === "/login/admin"
-
-  // Rotas específicas de cliente (usuário logado)
-  const isClientRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/conta") ||
-    pathname.startsWith("/configuracoes") ||
-    pathname.startsWith("/minhas-solucoes") ||
-    pathname.startsWith("/assinatura") ||
-    pathname.startsWith("/metricas") ||
-    pathname.startsWith("/interacoes") ||
-    pathname.startsWith("/proximos-envios") ||
-    pathname.startsWith("/ajuda") ||
-    pathname.startsWith("/expansao") ||
-    pathname.startsWith("/perfil") ||
-    pathname.startsWith("/solucao") ||
-    pathname.startsWith("/solucoes") ||
-    pathname.startsWith("/onboarding")
 
   // Se for uma rota pública, permite o acesso sem verificação adicional
   if (isPublicRoute) {
@@ -67,11 +67,6 @@ export async function middleware(request: NextRequest) {
             return request.cookies.get(name)?.value
           },
           set(name, value, options) {
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            })
             res.cookies.set({
               name,
               value,
@@ -79,11 +74,6 @@ export async function middleware(request: NextRequest) {
             })
           },
           remove(name, options) {
-            request.cookies.set({
-              name,
-              value: "",
-              ...options,
-            })
             res.cookies.set({
               name,
               value: "",
@@ -111,22 +101,10 @@ export async function middleware(request: NextRequest) {
       return res
     }
 
+    // Buscar user_type diretamente do metadata
+    const userType = session.user.user_metadata?.user_type
+
     // Se estiver autenticado, verificar o tipo de usuário
-    const { data: userData, error } = await supabase
-      .from("users")
-      .select("user_type")
-      .eq("id", session.user.id)
-      .single()
-
-    // Se houver erro ao buscar o tipo de usuário, permitir acesso para evitar loops
-    if (error) {
-      console.error("Erro ao verificar tipo de usuário:", error)
-      return res
-    }
-
-    const userType = userData?.user_type
-
-    // Se estiver autenticado mas tentar acessar rota incompatível com seu tipo
     if (isAdminRoute && userType !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
@@ -140,14 +118,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin", request.url))
     }
 
-    // Se estiver autenticado e tentar acessar página de login
-    if (pathname === "/login" || pathname === "/signup") {
-      if (userType === "admin") {
-        return NextResponse.redirect(new URL("/admin", request.url))
-      }
-      if (userType === "client") {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
-      }
+    const redirectByRole = {
+      admin: "/admin",
+      client: "/dashboard",
+    }
+    if (["/login", "/signup"].includes(pathname)) {
+      return NextResponse.redirect(new URL(redirectByRole[userType] || "/", request.url))
     }
 
     return res
