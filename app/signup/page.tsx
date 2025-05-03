@@ -108,19 +108,20 @@ export default function SignupPage() {
         throw new Error("Erro ao criar usuário")
       }
 
-      // Inserir tipo de usuário na tabela users
-      const { error: insertError } = await supabase.from("users").insert([
-        {
-          id: data.user.id,
+      // Chamar endpoint seguro para inserir tipo de usuário
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: name,
           email: email,
-          user_type: "client",
-          name: name,
-          plan: plan,
-        },
-      ])
-
-      if (insertError) {
-        console.error("Erro ao inserir tipo de usuário:", insertError)
+          tipoAcesso: "client",
+          plano: plan,
+        }),
+      })
+      const resJson = await res.json()
+      if (!res.ok) {
+        console.error("Erro ao inserir tipo de usuário:", resJson)
         // Não bloquear o cadastro se falhar a inserção do tipo
       }
 
