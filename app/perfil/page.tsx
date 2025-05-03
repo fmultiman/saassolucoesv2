@@ -17,20 +17,30 @@ import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { EmailChangeForm } from "@/components/email-change-form"
 
-interface Profile {
-  full_name: string
-  bio: string
-  phone: string
-  location: string
-  website: string
-  company: string
-  job_title: string
-  address: string
-  city: string
-  state: string
-  postal_code: string
-  country: string
-  avatar_url: string
+// Interface baseada nos campos mais comuns de perfis SaaS
+export interface Profile {
+  id?: string
+  name?: string
+  email?: string
+  bio?: string
+  phone?: string
+  job_title?: string
+  company?: string
+  website?: string
+  location?: string
+  avatar_url?: string
+  preferences?: Record<string, any>
+  company_name?: string
+  company_size?: string
+  industry?: string
+  address?: string
+  city?: string
+  state?: string
+  country?: string
+  postal_code?: string
+  social_links?: Record<string, string>
+  created_at?: string
+  updated_at?: string
 }
 
 export default function PerfilPage() {
@@ -99,7 +109,7 @@ export default function PerfilPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setProfile((prev: Profile | null) => ({ ...prev, [name]: value }))
+    setProfile((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSave = async () => {
@@ -132,7 +142,7 @@ export default function PerfilPage() {
 
   const handleAvatarUploaded = (url: string) => {
     setAvatarUrl(url)
-    setProfile((prev: Profile | null) => ({ ...prev, avatar_url: url }))
+    setProfile((prev) => ({ ...prev, avatar_url: url }))
   }
 
   if (loading) {
@@ -179,8 +189,8 @@ export default function PerfilPage() {
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={avatarUrl || ""} alt={profile?.full_name} />
-                    <AvatarFallback>{profile?.full_name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={avatarUrl || ""} alt={profile?.name} />
+                    <AvatarFallback>{profile?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <AvatarUpload onUploadComplete={handleAvatarUploaded} />
                 </div>
@@ -188,8 +198,8 @@ export default function PerfilPage() {
                 <div className="flex-1 space-y-4">
                   <div className="grid gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="full_name">Nome completo</Label>
-                      <Input id="full_name" name="full_name" value={profile?.full_name || ""} onChange={handleChange} />
+                      <Label htmlFor="name">Nome</Label>
+                      <Input id="name" name="name" value={profile?.name || ""} onChange={handleChange} />
                     </div>
 
                     <div className="grid gap-2">
