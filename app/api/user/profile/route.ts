@@ -142,4 +142,6 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("Erro ao processar requisição:", error)
-    return Next
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
+}
