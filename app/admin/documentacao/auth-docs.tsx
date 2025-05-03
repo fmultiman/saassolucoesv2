@@ -100,7 +100,7 @@ export function AuthDocumentation() {
               </p>
               <Code language="typescript" className="mt-2">
                 {`// lib/supabase/server.ts
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { cookieOptions } from './cookie-config'
 
