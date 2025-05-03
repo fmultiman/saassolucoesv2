@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { readMigrationFile } from "@/lib/services/migration-service"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 
 export async function GET(request: NextRequest) {
   try {
     // Verificar autenticação e permissões
     const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = createServerClient(cookieStore)
 
     const {
       data: { session },

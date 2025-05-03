@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
@@ -22,7 +22,7 @@ const profileUpdateSchema = z.object({
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = params.id
-    const supabase = createClient(cookies())
+    const supabase = createServerClient(cookies())
 
     // Verificar autenticação e permissões de admin
     const {

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { setupUserContentBucket } from "@/lib/supabase/storage-setup"
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient(cookies())
+    const supabase = createServerClient(cookies())
 
     // Verificar autenticação e permissões de admin
     const {

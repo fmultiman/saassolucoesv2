@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function GET(request: Request, { params }: { params: { code: string } }) {
   try {
-    const supabase = createClient()
+    const supabase = createServerClient()
     const { code } = params
 
     if (!code) {

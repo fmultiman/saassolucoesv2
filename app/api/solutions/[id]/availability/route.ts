@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ available: false, reason: "Usuário não autenticado" }, { status: 401 })
     }
 
-    const supabase = createClient()
+    const supabase = createServerClient()
 
     // Buscar o plano do usuário
     const { data: userData, error: userError } = await supabase
