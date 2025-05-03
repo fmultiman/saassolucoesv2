@@ -2,10 +2,8 @@
  * Retorna as URLs de redirecionamento para autenticação
  */
 export function getAuthRedirectUrls() {
-  const baseUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_SITE_URL || "https://saas.multihuman.com.br"
+  // Sempre usa a variável de ambiente de produção, nunca window.location.origin
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://saas.multihuman.com.br"
 
   return {
     emailRedirectTo: `${baseUrl}/auth/verify`,

@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
+import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
@@ -88,11 +89,12 @@ export default function SignupPage() {
       }
 
       // Registrar usuário
+      const { emailRedirectTo } = getAuthRedirectUrls()
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/verify`,
+          emailRedirectTo,
           data: {
             name: name,
             plan: plan,
