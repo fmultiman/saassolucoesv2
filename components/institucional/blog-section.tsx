@@ -115,39 +115,41 @@ export function BlogSection() {
                 </Card>
               ))
           ) : posts.length > 0 ? (
-            posts.map((post) => (
-              <Card key={post.id} className="overflow-hidden flex flex-col">
-                <CardHeader className="p-0">
-                  {post.imagem_capa ? (
-                    <div className="h-48 overflow-hidden">
-                      <img
-                        src={post.imagem_capa || "/placeholder.svg"}
-                        alt={post.titulo}
-                        className="h-full w-full object-cover transition-transform hover:scale-105"
-                      />
+            posts.map((post) =>
+              post.slug ? (
+                <Card key={post.id} className="overflow-hidden flex flex-col">
+                  <CardHeader className="p-0">
+                    {post.imagem_capa ? (
+                      <div className="h-48 overflow-hidden">
+                        <img
+                          src={post.imagem_capa || "/placeholder.svg"}
+                          alt={post.titulo}
+                          className="h-full w-full object-cover transition-transform hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-muted flex items-center justify-center">
+                        <span className="text-muted-foreground">Sem imagem</span>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="p-6 flex-grow">
+                    <CardTitle className="mb-2 line-clamp-2">{post.titulo}</CardTitle>
+                    <CardDescription className="line-clamp-3">
+                      {post.conteudo?.replace(/<[^>]*>/g, "").substring(0, 150)}...
+                    </CardDescription>
+                  </CardContent>
+                  <CardFooter className="pt-0">
+                    <div className="flex w-full items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{formatDate(post.data_publicacao || "")}</span>
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/blog/${post.slug}`}>Ler mais</Link>
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="h-48 bg-muted flex items-center justify-center">
-                      <span className="text-muted-foreground">Sem imagem</span>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="p-6 flex-grow">
-                  <CardTitle className="mb-2 line-clamp-2">{post.titulo}</CardTitle>
-                  <CardDescription className="line-clamp-3">
-                    {post.conteudo?.replace(/<[^>]*>/g, "").substring(0, 150)}...
-                  </CardDescription>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <div className="flex w-full items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{formatDate(post.data_publicacao || "")}</span>
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={post.url ?? undefined}>Ler mais</Link>
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))
+                  </CardFooter>
+                </Card>
+              ) : null
+            )
           ) : (
             <div className="col-span-3 text-center py-12">
               <p className="text-muted-foreground">Nenhum post encontrado.</p>
