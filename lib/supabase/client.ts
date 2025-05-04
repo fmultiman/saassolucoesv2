@@ -40,7 +40,7 @@ if (typeof window !== "undefined") {
           },
         },
         auth: {
-          flowType: "pkce",
+          flowType: "implicit",
           detectSessionInUrl: true,
           persistSession: true,
           autoRefreshToken: true,
