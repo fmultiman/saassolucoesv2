@@ -17,22 +17,57 @@ export default function VerifyPage() {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const code = searchParams.get("code")
+        // Log todos os parâmetros para depuração
+        console.log("Todos os parâmetros da URL:", {
+          code: searchParams.get("code"),
+          token: searchParams.get("token"),
+          type: searchParams.get("type"),
+          error: searchParams.get("error"),
+          error_description: searchParams.get("error_description"),
+          fullUrl: typeof window !== "undefined" ? window.location.href : "N/A",
+        })
 
-        if (!code) {
-          setError("Código de verificação não encontrado na URL")
-          setLoading(false)
-          return
+        // Verificar se há erro nos parâmetros
+        const errorParam = searchParams.get("error")
+        const errorDescription = searchParams.get("error_description")
+
+        if (errorParam) {
+          throw new Error(`Erro retornado pelo Supabase: ${errorParam} - ${errorDescription || "Sem descrição"}`)
         }
 
-        console.log("Código de verificação encontrado:", code)
+        // O Supabase Auth já deve ter processado o código/token automaticamente
+        // devido à configuração detectSessionInUrl: true no cliente
+        // const supabase = createClient()
 
-        // Usar o método correto para trocar o código por uma sessão
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        // Verificar se a sessão já foi estabelecida
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession()
 
-        if (error) {
-          console.error("Erro ao trocar código por sessão:", error)
-          throw error
+        if (sessionError) {
+          console.error("Erro ao obter sessão:", sessionError)
+          throw sessionError
+        }
+
+        if (!session) {
+          // Se não houver sessão, pode ser que o código não tenha sido processado automaticamente
+          console.log("Nenhuma sessão encontrada, verificando se há código para trocar manualmente")
+
+          const code = searchParams.get("code")
+          if (code) {
+            console.log("Tentando trocar código por sessão manualmente:", code)
+            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+            if (exchangeError) {
+              console.error("Erro ao trocar código por sessão:", exchangeError)
+              throw exchangeError
+            }
+          } else {
+            throw new Error("Nenhum código de verificação encontrado na URL e nenhuma sessão estabelecida")
+          }
+        } else {
+          console.log("Sessão já estabelecida:", session.user.id)
         }
 
         setSuccess(true)
@@ -43,7 +78,7 @@ export default function VerifyPage() {
         }, 2000)
       } catch (err: any) {
         console.error("Erro durante a verificação:", err)
-        setError("Erro ao verificar email")
+        setError(err.message || "Erro ao verificar email")
       } finally {
         setLoading(false)
       }
