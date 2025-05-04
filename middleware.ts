@@ -1,26 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClient } from "@supabase/ssr"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-
-  // Prefixos de rotas client-side (dashboard do cliente)
-  const clientPrefixes = [
-    "dashboard",
-    "conta",
-    "configuracoes",
-    "minhas-solucoes",
-    "assinatura",
-    "metricas",
-    "interacoes",
-    "proximos-envios",
-    "ajuda",
-    "perfil",
-    "solucao",
-    "solucoes",
-    "onboarding",
-  ]
-  const isClientRoute = clientPrefixes.some((prefix) => pathname.startsWith(`/${prefix}`))
 
   // Rotas que não precisam de autenticação
   const publicRoutes = [
@@ -28,18 +10,34 @@ export async function middleware(request: NextRequest) {
     "/login",
     "/signup",
     "/blog",
-    "/expansao",
+    "/marketplace",
+    "/recursos-adicionais",
     "/auth/verify",
     "/auth/reset-password",
     "/recuperar-senha",
-    "/verificar-email",
-    "/email-verificado"
   ]
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 
   // Rotas específicas de admin
   const isAdminRoute = pathname.startsWith("/admin")
   const isAdminLoginRoute = pathname === "/login/admin"
+
+  // Rotas específicas de cliente (usuário logado)
+  const isClientRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/conta") ||
+    pathname.startsWith("/configuracoes") ||
+    pathname.startsWith("/minhas-solucoes") ||
+    pathname.startsWith("/assinatura") ||
+    pathname.startsWith("/metricas") ||
+    pathname.startsWith("/interacoes") ||
+    pathname.startsWith("/proximos-envios") ||
+    pathname.startsWith("/ajuda") ||
+    pathname.startsWith("/expansao") ||
+    pathname.startsWith("/perfil") ||
+    pathname.startsWith("/solucao") ||
+    pathname.startsWith("/solucoes") ||
+    pathname.startsWith("/onboarding")
 
   // Se for uma rota pública, permite o acesso sem verificação adicional
   if (isPublicRoute) {
@@ -65,18 +63,32 @@ export async function middleware(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string): string | undefined {
+          get(name) {
             return request.cookies.get(name)?.value
           },
-          set(name: string, value: string, options?: Record<string, any>): void {
-            if (typeof (request.cookies as any).set === "function") {
-              (request.cookies as any).set({ name, value, ...options })
-            }
+          set(name, value, options) {
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+            res.cookies.set({
+              name,
+              value,
+              ...options,
+            })
           },
-          remove(name: string, options?: Record<string, any>): void {
-            if (typeof (request.cookies as any).set === "function") {
-              (request.cookies as any).set({ name, value: "", ...options })
-            }
+          remove(name, options) {
+            request.cookies.set({
+              name,
+              value: "",
+              ...options,
+            })
+            res.cookies.set({
+              name,
+              value: "",
+              ...options,
+            })
           },
         },
       },
@@ -99,10 +111,44 @@ export async function middleware(request: NextRequest) {
       return res
     }
 
-    // Buscar user_type diretamente do metadata
-    const userType = session.user.user_metadata?.user_type
-
     // Se estiver autenticado, verificar o tipo de usuário
+    const { data: userData, error } = await supabase
+      .from("users")
+      .select("user_type")
+      .eq("id", session.user.id)
+      .single()
+
+    // Se houver erro ao buscar o tipo de usuário, tentar verificar pelo email
+    if (error) {
+      console.error("Erro ao verificar tipo de usuário:", error)
+
+      // Verificar se o email é de um administrador (solução temporária)
+      const isAdminEmail =
+        session.user.email?.includes("admin") ||
+        session.user.email?.endsWith("@admin.com") ||
+        session.user.email?.endsWith("@admin.com.br") ||
+        session.user.email === "admin@saas-solucoes.com" ||
+        session.user.email === "admin@saas-solucoes.com.br"
+
+      // Se for um email de admin, tratar como admin
+      if (isAdminEmail) {
+        // Se estiver na página de login normal e for admin, não redirecionar para login/admin
+        if (pathname === "/login") {
+          return NextResponse.redirect(new URL("/admin", request.url))
+        }
+
+        // Se estiver tentando acessar rotas de cliente sendo admin
+        if (isClientRoute) {
+          return NextResponse.redirect(new URL("/admin", request.url))
+        }
+      }
+
+      return res
+    }
+
+    const userType = userData?.user_type
+
+    // Se estiver autenticado mas tentar acessar rota incompatível com seu tipo
     if (isAdminRoute && userType !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
@@ -116,12 +162,21 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin", request.url))
     }
 
-    const redirectByRole = {
-      admin: "/admin",
-      client: "/dashboard",
+    // Se estiver autenticado e tentar acessar página de login
+    if (pathname === "/login") {
+      if (userType === "admin") {
+        return NextResponse.redirect(new URL("/admin", request.url))
+      }
+      if (userType === "client") {
+        return NextResponse.redirect(new URL("/dashboard", request.url))
+      }
     }
-    if (["/login", "/signup"].includes(pathname)) {
-      return NextResponse.redirect(new URL(redirectByRole[userType as keyof typeof redirectByRole] || "/", request.url))
+
+    // Se estiver autenticado e tentar acessar página de login de admin
+    if (pathname === "/login/admin") {
+      if (userType === "admin") {
+        return NextResponse.redirect(new URL("/admin", request.url))
+      }
     }
 
     return res
