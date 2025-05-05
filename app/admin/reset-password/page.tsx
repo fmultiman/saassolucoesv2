@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, CuboidIcon } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 const formSchema = z
   .object({

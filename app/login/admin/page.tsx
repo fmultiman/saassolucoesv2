@@ -1,5 +1,7 @@
 "use client"
 
+// 🔐 Página de autenticação — usa nova instância Supabase
+
 import type React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -13,7 +15,8 @@ import { Loader2, CuboidIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 const formSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -31,17 +34,14 @@ export default function AdminLoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [resetSent, setResetSent] = useState(false)
 
-  // Verificar se já está autenticado
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession()
-
         if (error) {
           console.error("Erro ao verificar sessão:", error)
           return
         }
-
         if (data.session) {
           console.log("Sessão encontrada, redirecionando...")
           router.push(redirectTo)
@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
     }
 
     checkSession()
-  }, [router, supabase.auth, redirectTo])
+  }, [router, redirectTo])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,16 +69,12 @@ export default function AdminLoginPage() {
     setError(null)
 
     try {
-      // Tentar fazer login
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       })
 
       if (error) {
-        console.error("Erro de autenticação:", error)
-
-        // Mensagens de erro mais específicas
         if (error.message.includes("Invalid login credentials")) {
           setError("Credenciais inválidas. Verifique seu email e senha.")
         } else if (error.message.includes("Email not confirmed")) {
@@ -96,48 +92,24 @@ export default function AdminLoginPage() {
         return
       }
 
-      // Verificar se o usuário é um admin
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("user_type")
-          .eq("id", data.session.user.id)
-          .single()
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("user_type")
+        .eq("id", data.session.user.id)
+        .single()
 
-        if (userError) {
-          console.error("Erro ao verificar tipo de usuário:", userError)
-          setError("Erro ao verificar permissões de usuário.")
-
-          // Fazer logout se não conseguir verificar o tipo de usuário
-          await supabase.auth.signOut()
-          setIsLoading(false)
-          return
-        }
-
-        if (userData?.user_type !== "admin") {
-          setError("Você não tem permissão para acessar o painel administrativo.")
-
-          // Fazer logout se não for admin
-          await supabase.auth.signOut()
-          setIsLoading(false)
-          return
-        }
-      } catch (err) {
-        console.error("Erro ao verificar tipo de usuário:", err)
-        setError("Erro ao verificar permissões de usuário.")
-
-        // Fazer logout em caso de erro
+      if (userError || userData?.user_type !== "admin") {
+        setError("Você não tem permissão para acessar o painel administrativo.")
         await supabase.auth.signOut()
         setIsLoading(false)
         return
       }
 
-      // Redirecionar para o dashboard admin
-      console.log("Login bem-sucedido, redirecionando para:", redirectTo)
       window.location.href = redirectTo
     } catch (error: any) {
-      console.error("Erro inesperado ao fazer login:", error)
       setError("Ocorreu um erro inesperado. Tente novamente mais tarde.")
+      console.error("Erro inesperado ao fazer login:", error)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -161,16 +133,13 @@ export default function AdminLoginPage() {
       })
 
       if (error) {
-        console.error("Erro ao enviar email de recuperação:", error)
         setError(`Erro ao enviar email de recuperação: ${error.message}`)
         setIsLoading(false)
         return
       }
 
       setResetSent(true)
-      setError(null)
     } catch (error: any) {
-      console.error("Erro ao enviar email de recuperação:", error)
       setError("Ocorreu um erro ao enviar o email de recuperação.")
     } finally {
       setIsLoading(false)
@@ -189,6 +158,7 @@ export default function AdminLoginPage() {
           <CardTitle className="text-2xl">Login Administrativo</CardTitle>
           <CardDescription>Faça login para acessar o painel administrativo</CardDescription>
         </CardHeader>
+
         <CardContent>
           {error && (
             <Alert variant="destructive" className="mb-4">
@@ -289,6 +259,7 @@ export default function AdminLoginPage() {
             </div>
           )}
         </CardContent>
+
         <CardFooter className="flex flex-col space-y-2 text-center">
           {!isResetPasswordOpen && (
             <Button

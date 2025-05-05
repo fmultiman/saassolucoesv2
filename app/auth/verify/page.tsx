@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 export default function VerifyPage() {
   const router = useRouter()

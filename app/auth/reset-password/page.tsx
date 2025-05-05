@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 export default function ResetPasswordPage() {
   const router = useRouter()

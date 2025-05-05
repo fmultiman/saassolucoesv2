@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, User, Briefcase, MapPin, Mail } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { EmailChangeForm } from "@/components/email-change-form"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 // Interface baseada nos campos mais comuns de perfis SaaS
 export interface Profile {

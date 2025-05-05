@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useToast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ProfileForm } from "@/components/profile-form"
 import { Skeleton } from "@/components/ui/skeleton"
+import { createClient } from "@/lib/supabase/client" // ✅ NOVO
+const supabase = createClient() // ✅ NOVO
 
 export default function AdminProfilePage() {
   const { user, profile, loading, error, updateProfile, refreshProfile, checkSession, refreshSession } =

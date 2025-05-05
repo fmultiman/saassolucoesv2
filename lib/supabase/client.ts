@@ -1,11 +1,29 @@
 import { createBrowserClient } from "@supabase/ssr"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import type { Database } from "./types"
 
-// Singleton pattern para evitar múltiplas instâncias do GoTrueClient
-let supabase: ReturnType<typeof createBrowserClient> | undefined = undefined
+let supabaseInstance: SupabaseClient<Database> | null = null
 
-if (typeof window !== "undefined") {
-  if (!(window as any).supabaseSingleton) {
-    (window as any).supabaseSingleton = createBrowserClient(
+export const createClient = (): SupabaseClient<Database> => {
+  if (typeof window === "undefined") {
+    // No servidor sempre cria uma nova instância
+    return createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          flowType: "pkce",
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+      }
+    )
+  }
+
+  // No cliente, usa singleton
+  if (!supabaseInstance) {
+    supabaseInstance = createBrowserClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -18,21 +36,11 @@ if (typeof window !== "undefined") {
           },
           set(name, value, options) {
             let cookie = `${name}=${value}`
-            if (options.maxAge) {
-              cookie += `; Max-Age=${options.maxAge}`
-            }
-            if (options.path) {
-              cookie += `; Path=${options.path}`
-            }
-            if (options.sameSite) {
-              cookie += `; SameSite=${options.sameSite}`
-            }
-            if (options.domain) {
-              cookie += `; Domain=${options.domain}`
-            }
-            if (options.secure) {
-              cookie += "; Secure"
-            }
+            if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`
+            if (options.path) cookie += `; Path=${options.path}`
+            if (options.sameSite) cookie += `; SameSite=${options.sameSite}`
+            if (options.domain) cookie += `; Domain=${options.domain}`
+            if (options.secure) cookie += `; Secure`
             document.cookie = cookie
           },
           remove(name, options) {
@@ -40,7 +48,7 @@ if (typeof window !== "undefined") {
           },
         },
         auth: {
-          flowType: "implicit",
+          flowType: "pkce",
           detectSessionInUrl: true,
           persistSession: true,
           autoRefreshToken: true,
@@ -48,7 +56,14 @@ if (typeof window !== "undefined") {
       }
     )
   }
-  supabase = (window as any).supabaseSingleton
+
+  return supabaseInstance
 }
 
-export { supabase }
+// Exporta diretamente como 'supabase' para manter compatibilidade com suas páginas
+export const supabase = createClient()
+
+// Função para limpar o singleton — útil em logout
+export const clearSupabaseClient = () => {
+  supabaseInstance = null
+}

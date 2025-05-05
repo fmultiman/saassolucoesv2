@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut, Loader2 } from "lucide-react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient, clearSupabaseClient } from "@/lib/supabase/client"
 
 interface LogoutButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
@@ -18,12 +18,13 @@ export function LogoutButton({ variant = "ghost", size = "sm", className }: Logo
 
   const handleLogout = async () => {
     if (isLoading) return
-
     setIsLoading(true)
+
+    const supabase = createClient()
+
     try {
       console.log("Iniciando processo de logout")
 
-      // Fazer logout no Supabase
       const { error } = await supabase.auth.signOut()
 
       if (error) {
@@ -31,18 +32,16 @@ export function LogoutButton({ variant = "ghost", size = "sm", className }: Logo
         throw error
       }
 
+      // Limpa singleton
+      clearSupabaseClient()
+
       console.log("Logout bem-sucedido")
 
-      // Limpar qualquer estado local se necessário
-      localStorage.removeItem("supabase.auth.token")
-
-      // Redirecionar para a página inicial
+      // Redireciona e atualiza
       router.push("/")
-
-      // Forçar um refresh completo da página para limpar qualquer estado
       router.refresh()
 
-      // Forçar um refresh completo do navegador após um pequeno delay
+      // Refresco final
       setTimeout(() => {
         window.location.href = "/"
       }, 100)
