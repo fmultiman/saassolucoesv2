@@ -131,7 +131,7 @@ export function Header() {
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/conta">Perfil</Link>
+              <Link href="/perfil">Perfil</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/assinatura">Assinatura</Link>

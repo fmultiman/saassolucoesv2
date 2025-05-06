@@ -107,11 +107,12 @@ export function Sidebar({ className, collapsed = false, onCollapsedChange }: Sid
       icon: CreditCard,
       href: "/assinatura",
     },
-    {
-      title: "Minha Conta",
-      icon: User,
-      href: "/conta",
-    },
+    // Removido: Minha Conta
+    // {
+    //   title: "Minha Conta",
+    //   icon: User,
+    //   href: "/conta",
+    // },
     {
       title: "Ajuda",
       icon: HelpCircle,
