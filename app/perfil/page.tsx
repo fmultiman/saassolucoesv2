@@ -15,6 +15,7 @@ import { Loader2, User, Briefcase, MapPin, Mail } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { EmailChangeForm } from "@/components/email-change-form"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
 
@@ -155,7 +156,16 @@ export default function PerfilPage() {
       </div>
     )
   }
-
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-4">
+        <p className="text-lg font-medium text-muted-foreground">Nenhum perfil encontrado.</p>
+        <Button variant="outline" onClick={() => router.refresh()}>
+          Tentar novamente
+        </Button>
+      </div>
+    )
+  }
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
