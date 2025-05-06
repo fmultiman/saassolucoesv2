@@ -205,7 +205,12 @@ export default function PerfilPage() {
                     <AvatarImage src={avatarUrl || ""} alt={profile?.name} />
                     <AvatarFallback>{profile?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <AvatarUpload onUploadComplete={handleAvatarUploaded} />
+                  <AvatarUpload
+                    currentAvatarUrl={avatarUrl}
+                    userId={user?.id || ""}
+                    onAvatarChange={(url: string | null) => handleAvatarUploaded(url ?? "")}
+                    size="lg"
+                  />
                 </div>
 
                 <div className="flex-1 space-y-4">

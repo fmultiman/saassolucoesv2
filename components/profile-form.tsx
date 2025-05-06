@@ -21,6 +21,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 
 const profileFormSchema = z.object({
   name: z
@@ -107,16 +109,16 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
 
   // Valores padrão do formulário
   const defaultValues: Partial<ProfileFormValues> = {
-    name: profile?.name || "",
-    bio: profile?.bio || "",
-    phone: profile?.phone || "",
-    job_title: profile?.job_title || "",
-    company_name: profile?.company_name || "",
-    company_size: profile?.company_size || "",
-    industry: profile?.industry || "",
-    website: profile?.website || "",
-    location: profile?.location || "",
-    avatar_url: profile?.avatar_url || null,
+    name: profile?.name ?? "",
+    bio: profile?.bio ?? "",
+    phone: profile?.phone ?? "",
+    job_title: profile?.job_title ?? "",
+    company_name: profile?.company_name ?? "",
+    company_size: profile?.company_size ?? "",
+    industry: profile?.industry ?? "",
+    website: profile?.website ?? "",
+    location: profile?.location ?? "",
+    avatar_url: profile?.avatar_url ?? null,
   }
 
   const form = useForm<ProfileFormValues>({
@@ -153,6 +155,47 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
     form.setValue("avatar_url", url)
   }
 
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Senhas não coincidem",
+        description: "A nova senha e a confirmação devem ser iguais.",
+      })
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      // Atualiza a senha do usuário logado
+      // O Supabase exige apenas o novo password, mas pode-se adicionar lógica para checar a senha atual se necessário
+      const { error } = await (window as any).supabase.auth.updateUser({
+        password: newPassword,
+      })
+      if (error) throw error
+      toast({
+        title: "Senha atualizada",
+        description: "Sua senha foi atualizada com sucesso.",
+      })
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar senha",
+        description: error.message || "Ocorreu um erro ao atualizar sua senha.",
+      })
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
   const companySizes = [
     { value: "1-10", label: "1-10 funcionários" },
     { value: "11-50", label: "11-50 funcionários" },
@@ -179,8 +222,8 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col items-center mb-6">
           <AvatarUpload
-            currentAvatarUrl={form.watch("avatar_url")}
-            userId={profile?.id || ""}
+            currentAvatarUrl={form.watch("avatar_url") ?? null}
+            userId={profile?.id ?? ""}
             onAvatarChange={handleAvatarChange}
             size="lg"
           />
@@ -221,7 +264,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
             <FormItem>
               <FormLabel>Nome completo</FormLabel>
               <FormControl>
-                <Input placeholder="Seu nome completo" {...field} value={field.value || ""} />
+                <Input placeholder="Seu nome completo" {...field} value={field.value ?? ""} />
               </FormControl>
               <FormDescription>Este é o nome que será exibido no seu perfil.</FormDescription>
               <FormMessage />
@@ -240,7 +283,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
                   placeholder="Conte um pouco sobre você"
                   className="resize-none"
                   {...field}
-                  value={field.value || ""}
+                  value={field.value ?? ""}
                 />
               </FormControl>
               <FormDescription>Uma breve descrição sobre você. Isso será exibido no seu perfil.</FormDescription>
@@ -257,7 +300,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="Seu telefone" {...field} value={field.value || ""} />
+                  <Input placeholder="Seu telefone" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -271,7 +314,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
               <FormItem>
                 <FormLabel>Cargo</FormLabel>
                 <FormControl>
-                  <Input placeholder="Seu cargo" {...field} value={field.value || ""} />
+                  <Input placeholder="Seu cargo" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -287,7 +330,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
               <FormItem>
                 <FormLabel>Empresa</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome da sua empresa" {...field} value={field.value || ""} />
+                  <Input placeholder="Nome da sua empresa" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -300,7 +343,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tamanho da empresa</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tamanho da empresa" />
@@ -326,7 +369,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
           render={({ field }) => (
             <FormItem>
               <FormLabel>Indústria</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+              <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a indústria" />
@@ -353,7 +396,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
               <FormItem>
                 <FormLabel>Website</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://seusite.com.br" {...field} value={field.value || ""} />
+                  <Input placeholder="https://seusite.com.br" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -367,13 +410,59 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
               <FormItem>
                 <FormLabel>Localização</FormLabel>
                 <FormControl>
-                  <Input placeholder="Cidade, Estado" {...field} value={field.value || ""} />
+                  <Input placeholder="Cidade, Estado" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        {(typeof window !== 'undefined') && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Segurança</CardTitle>
+              <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Senha Atual</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nova Senha</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={handleChangePassword}
+                disabled={isChangingPassword}
+              >
+                {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Salvando..." : "Salvar alterações"}
