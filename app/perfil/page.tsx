@@ -19,6 +19,8 @@ import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
+import { Header } from "@/components/header"
+import { Sidebar } from "@/components/sidebar"
 
 // Interface baseada nos campos mais comuns de perfis SaaS
 export interface Profile {
