@@ -418,51 +418,59 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
           />
         </div>
 
-        {(typeof window !== 'undefined') && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Segurança</CardTitle>
-              <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Senha Atual</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={e => setCurrentPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Nova Senha</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              <Button
-                type="button"
-                className="w-full"
-                onClick={handleChangePassword}
-                disabled={isChangingPassword}
-              >
-                {isChangingPassword ? "Alterando..." : "Alterar Senha"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Coluna esquerda: informações do perfil */}
+          <div className="flex flex-col gap-6">
+            {/* Os campos do formulário de perfil já estão acima deste bloco, então aqui não precisa repetir nada. */}
+            {/* Se quiser adicionar algo extra ao lado esquerdo, pode adicionar aqui. */}
+          </div>
+          {/* Coluna direita: bloco de segurança */}
+          <div className="flex flex-col gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Segurança</CardTitle>
+                <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Senha Atual</Label>
+                  <Input
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova Senha</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword}
+                >
+                  {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Salvando..." : "Salvar alterações"}
