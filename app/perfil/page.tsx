@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, User, Briefcase, MapPin, Mail } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
-import { EmailChangeForm } from "@/components/email-change-form"
+import { ProfileForm } from "@/components/profile-form"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
@@ -54,7 +53,10 @@ export default function PerfilPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("personal")
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     async function loadUserProfile() {
@@ -149,6 +151,32 @@ export default function PerfilPage() {
     setProfile((prev) => ({ ...prev, avatar_url: url }))
   }
 
+  const handleChangePassword = async () => {
+    setIsChangingPassword(true)
+
+    try {
+      const { error } = await supabase.auth.update({
+        password: newPassword,
+      })
+
+      if (error) throw error
+
+      toast({
+        title: "Senha alterada",
+        description: "Sua senha foi alterada com sucesso.",
+      })
+    } catch (error: any) {
+      console.error("Erro ao alterar senha:", error)
+      toast({
+        title: "Erro ao alterar senha",
+        description: error.message || "Não foi possível alterar sua senha.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -169,217 +197,55 @@ export default function PerfilPage() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 mb-8">
-          <TabsTrigger value="personal" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Pessoal</span>
-          </TabsTrigger>
-          <TabsTrigger value="professional" className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            <span className="hidden sm:inline">Profissional</span>
-          </TabsTrigger>
-          <TabsTrigger value="address" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span className="hidden sm:inline">Endereço</span>
-          </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            <span className="hidden sm:inline">Email</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="personal">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>
-                Atualize suas informações pessoais e como você aparece para outros usuários.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="flex flex-col items-center space-y-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={avatarUrl || ""} alt={profile?.name} />
-                    <AvatarFallback>{profile?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <AvatarUpload
-                    currentAvatarUrl={avatarUrl}
-                    userId={user?.id || ""}
-                    onAvatarChange={(url: string | null) => handleAvatarUploaded(url ?? "")}
-                    size="lg"
-                  />
-                </div>
-
-                <div className="flex-1 space-y-4">
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">Nome</Label>
-                      <Input id="name" name="name" value={profile?.name || ""} onChange={handleChange} />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="bio">Biografia</Label>
-                      <Textarea id="bio" name="bio" value={profile?.bio || ""} onChange={handleChange} rows={4} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" name="phone" value={profile?.phone || ""} onChange={handleChange} />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="location">Localização</Label>
-                  <Input id="location" name="location" value={profile?.location || ""} onChange={handleChange} />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar alterações"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="professional">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Profissionais</CardTitle>
-              <CardDescription>Atualize suas informações profissionais e de trabalho.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="job_title">Cargo</Label>
-                  <Input id="job_title" name="job_title" value={profile?.job_title || ""} onChange={handleChange} />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input id="company" name="company" value={profile?.company || ""} onChange={handleChange} />
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  name="website"
-                  type="url"
-                  value={profile?.website || ""}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar alterações"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="address">
-          <Card>
-            <CardHeader>
-              <CardTitle>Endereço</CardTitle>
-              <CardDescription>Atualize seu endereço e informações de localização.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={profile?.address || ""} onChange={handleChange} />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="city">Cidade</Label>
-                  <Input id="city" name="city" value={profile?.city || ""} onChange={handleChange} />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="state">Estado</Label>
-                  <Input id="state" name="state" value={profile?.state || ""} onChange={handleChange} />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="postal_code">CEP</Label>
-                  <Input
-                    id="postal_code"
-                    name="postal_code"
-                    value={profile?.postal_code || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="country">País</Label>
-                  <Input id="country" name="country" value={profile?.country || ""} onChange={handleChange} />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar alterações"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email</CardTitle>
-              <CardDescription>Gerencie seu email e configurações de conta.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-2">
-                <Label>Email atual</Label>
-                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{user?.email}</span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Alterar Email</h3>
-                <EmailChangeForm currentEmail={user?.email} />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações Pessoais</CardTitle>
+            <CardDescription>Atualize suas informações pessoais</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm profile={profile} onUpdateProfile={handleSave} isAdmin={false} userEmail={user?.email} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Segurança</CardTitle>
+            <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Senha Atual</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+              {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
