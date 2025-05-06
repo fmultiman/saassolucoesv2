@@ -155,7 +155,7 @@ export default function PerfilPage() {
     setIsChangingPassword(true)
 
     try {
-      const { error } = await supabase.auth.update({
+      const { error } = await supabase.auth.updateUser({
         password: newPassword,
       })
 
