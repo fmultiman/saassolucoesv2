@@ -157,6 +157,10 @@ export default function PerfilPage() {
       </div>
     )
   }
+  if (!user && !loading) {
+    router.push("/login")
+    return null
+  }
   if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-4">

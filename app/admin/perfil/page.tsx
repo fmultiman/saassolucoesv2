@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { ProfileForm } from "@/components/profile-form"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ChangePasswordBlock } from "@/components/change-password-block";
 import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
 
@@ -40,6 +41,12 @@ export default function AdminProfilePage() {
 
     return () => clearInterval(sessionCheckInterval)
   }, [checkSession, refreshSession, router])
+
+  // Não mostrar nada se não houver usuário e não estiver carregando (logout)
+  if (!user && !loading) {
+    router.push("/login/admin")
+    return null
+  }
 
   if (loading) {
     return (
@@ -78,31 +85,44 @@ export default function AdminProfilePage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Atualize suas informações pessoais</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <Skeleton className="h-32 w-32 rounded-full" />
-                </div>
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações Pessoais</CardTitle>
+              <CardDescription>Atualize suas informações pessoais</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <Skeleton className="h-32 w-32 rounded-full" />
+                  </div>
                   <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
                 </div>
-              </div>
-            ) : profile ? (
-              <ProfileForm profile={profile} onUpdateProfile={updateProfile} isAdmin={true} userEmail={user?.email} />
-            ) : (
-              <p>Nenhum perfil encontrado. Faça login para visualizar seu perfil.</p>
-            )}
-          </CardContent>
-        </Card>
+              ) : profile ? (
+                <ProfileForm profile={profile} onUpdateProfile={updateProfile} isAdmin={true} userEmail={user?.email} />
+              ) : (
+                <p>Nenhum perfil encontrado. Faça login para visualizar seu perfil.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Segurança</CardTitle>
+              <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ChangePasswordBlock user={user} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
