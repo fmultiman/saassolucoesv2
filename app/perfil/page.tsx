@@ -70,10 +70,12 @@ export default function PerfilPage() {
         setUser(session.user)
 
         // Carregar perfil do usuário
+        console.log("USER ID:", session.user.id)
+
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("user_id", session.user.id)
+          .eq("id", session.user.id)
           .single()
 
         if (profileError && profileError.code !== "PGRST116") {
@@ -118,7 +120,7 @@ export default function PerfilPage() {
 
     try {
       const { error } = await supabase.from("profiles").upsert({
-        user_id: user.id,
+        id: user.id,
         updated_at: new Date().toISOString(),
         ...profile,
       })
