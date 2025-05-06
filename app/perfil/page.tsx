@@ -17,6 +17,8 @@ import { ProfileForm } from "@/components/profile-form"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
+import { Header } from "@/components/header"
+import { Sidebar } from "@/components/sidebar"
 
 // Interface baseada nos campos mais comuns de perfis SaaS
 export interface Profile {
@@ -53,10 +55,6 @@ export default function PerfilPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     async function loadUserProfile() {
@@ -151,32 +149,6 @@ export default function PerfilPage() {
     setProfile((prev) => ({ ...prev, avatar_url: url }))
   }
 
-  const handleChangePassword = async () => {
-    setIsChangingPassword(true)
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "Senha alterada",
-        description: "Sua senha foi alterada com sucesso.",
-      })
-    } catch (error: any) {
-      console.error("Erro ao alterar senha:", error)
-      toast({
-        title: "Erro ao alterar senha",
-        description: error.message || "Não foi possível alterar sua senha.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsChangingPassword(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -195,56 +167,24 @@ export default function PerfilPage() {
     )
   }
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Atualize suas informações pessoais</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProfileForm profile={profile} onUpdateProfile={handleSave} isAdmin={false} userEmail={user?.email} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Segurança</CardTitle>
-            <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Senha Atual</Label>
-              <Input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-password">Nova Senha</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
-              {isChangingPassword ? "Alterando..." : "Alterar Senha"}
-            </Button>
-          </CardContent>
-        </Card>
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-hidden transition-all duration-300 md:ml-64">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações Pessoais</CardTitle>
+                <CardDescription>Atualize suas informações pessoais</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileForm profile={profile} onUpdateProfile={handleSave} isAdmin={false} userEmail={user?.email} />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     </div>
   )

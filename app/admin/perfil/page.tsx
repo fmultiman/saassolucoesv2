@@ -17,10 +17,6 @@ const supabase = createClient() // ✅ NOVO
 export default function AdminProfilePage() {
   const { user, loading, error, updateProfile, refreshProfile, checkSession, refreshSession } = useCurrentUser()
   const profile = user?.profile
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -44,45 +40,6 @@ export default function AdminProfilePage() {
 
     return () => clearInterval(sessionCheckInterval)
   }, [checkSession, refreshSession, router])
-
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Senhas não coincidem",
-        description: "A nova senha e a confirmação devem ser iguais.",
-      })
-      return
-    }
-
-    setIsChangingPassword(true)
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "Senha atualizada",
-        description: "Sua senha foi atualizada com sucesso.",
-      })
-
-      // Limpar campos
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-    } catch (error) {
-      console.error("Erro ao atualizar senha:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar senha",
-        description: "Ocorreu um erro ao atualizar sua senha.",
-      })
-    } finally {
-      setIsChangingPassword(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -145,54 +102,6 @@ export default function AdminProfilePage() {
               <p>Nenhum perfil encontrado. Faça login para visualizar seu perfil.</p>
             )}
           </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Segurança</CardTitle>
-            <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Senha Atual</Label>
-              <Input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-password">Nova Senha</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleChangePassword} disabled={isChangingPassword || !newPassword || !confirmPassword}>
-              {isChangingPassword ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : (
-                "Alterar Senha"
-              )}
-            </Button>
-          </CardFooter>
         </Card>
       </div>
     </div>
