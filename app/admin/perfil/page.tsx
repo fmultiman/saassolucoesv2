@@ -15,8 +15,8 @@ import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
 
 export default function AdminProfilePage() {
-  const { user, profile, loading, error, updateProfile, refreshProfile, checkSession, refreshSession } =
-    useCurrentUser()
+  const { user, loading, error, updateProfile, refreshProfile, checkSession, refreshSession } = useCurrentUser()
+  const profile = user?.profile
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")

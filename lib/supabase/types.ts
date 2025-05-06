@@ -136,6 +136,54 @@ export type Database = {
           description?: string | null
         }
       }
+      profiles: {
+        Row: {
+          id: string
+          name: string
+          avatar_url: string | null
+          bio: string | null
+          phone: string | null
+          job_title: string | null
+          company_name: string | null
+          company_size: string | null
+          industry: string | null
+          website: string | null
+          location: string | null
+          created_at: string | null
+          updated_at: string | null
+          // adicione aqui os outros campos reais da sua tabela
+        }
+      
+        Insert: {
+          id: string // obrigatório, geralmente = user.id
+          name: string
+          avatar_url?: string | null
+          bio?: string | null
+          phone?: string | null
+          job_title?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          industry?: string | null
+          website?: string | null
+          location?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      
+        Update: {
+          name?: string
+          avatar_url?: string | null
+          bio?: string | null
+          phone?: string | null
+          job_title?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          industry?: string | null
+          website?: string | null
+          location?: string | null
+          updated_at?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
