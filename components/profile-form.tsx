@@ -438,7 +438,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
                     id="current-password"
                     type="password"
                     value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -447,7 +447,7 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
                     id="new-password"
                     type="password"
                     value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -456,15 +456,10 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
                     id="confirm-password"
                     type="password"
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                 </div>
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={handleChangePassword}
-                  disabled={isChangingPassword}
-                >
+                <Button type="button" className="w-full" onClick={handleChangePassword} disabled={isChangingPassword}>
                   {isChangingPassword ? "Alterando..." : "Alterar Senha"}
                 </Button>
               </CardContent>
