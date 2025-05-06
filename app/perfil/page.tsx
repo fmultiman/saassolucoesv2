@@ -116,22 +116,21 @@ export default function PerfilPage() {
     setProfile((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSave = async () => {
+  const handleSave = async (data: any): Promise<{ success?: boolean; error?: Error }> => {
     setSaving(true)
-
     try {
       const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         updated_at: new Date().toISOString(),
         ...profile,
+        ...data,
       })
-
       if (error) throw error
-
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram salvas com sucesso.",
       })
+      return { success: true }
     } catch (error: any) {
       console.error("Erro ao salvar perfil:", error)
       toast({
@@ -139,6 +138,7 @@ export default function PerfilPage() {
         description: error.message || "Não foi possível salvar suas informações.",
         variant: "destructive",
       })
+      return { error }
     } finally {
       setSaving(false)
     }
