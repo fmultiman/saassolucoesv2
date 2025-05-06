@@ -14,6 +14,7 @@ import { Loader2, User, Briefcase, MapPin, Mail } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { AvatarUpload } from "@/components/avatar-upload"
 import { ProfileForm } from "@/components/profile-form"
+import { ChangePasswordBlock } from "@/components/change-password-block" // ✅ NOVO
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { createClient } from "@/lib/supabase/client" // ✅ NOVO
 const supabase = createClient() // ✅ NOVO
@@ -174,15 +175,28 @@ export default function PerfilPage() {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <h1 className="text-3xl font-bold mb-6">Seu Perfil</h1>
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações Pessoais</CardTitle>
-                <CardDescription>Atualize suas informações pessoais</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfileForm profile={profile} onUpdateProfile={handleSave} isAdmin={false} userEmail={user?.email} />
-              </CardContent>
-            </Card>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Pessoais</CardTitle>
+                  <CardDescription>Atualize suas informações pessoais</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProfileForm profile={profile} onUpdateProfile={handleSave} isAdmin={false} userEmail={user?.email} />
+                </CardContent>
+              </Card>
+            </div>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Segurança</CardTitle>
+                  <CardDescription>Gerencie suas credenciais de acesso</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ChangePasswordBlock user={user} />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </main>
       </div>
