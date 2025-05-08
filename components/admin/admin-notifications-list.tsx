@@ -97,6 +97,32 @@ interface AdminNotificationsListProps {
   filter?: NotificationFilterType
 }
 
+interface Categoria {
+  key: string;
+  label: string;
+}
+
+function getCategoriasPersonalizadas(): Categoria[] {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("notificationCategories");
+    if (stored) return JSON.parse(stored) as Categoria[];
+  }
+  return [
+    { key: "sistema", label: "Sistema" },
+    { key: "usuarios", label: "Usuários" },
+    { key: "metricas", label: "Métricas" },
+    { key: "outros", label: "Outros" },
+  ];
+}
+
+function getCategoriaKey(category: string): string {
+  const c = category?.toLowerCase();
+  if (c === "sistema") return "sistema";
+  if (c === "usuários" || c === "usuarios") return "usuarios";
+  if (c === "métricas" || c === "metricas") return "metricas";
+  return "outros";
+}
+
 export function AdminNotificationsList({ filter = "all" }: AdminNotificationsListProps) {
   const [notifications, setNotifications] = useState(notificationsData)
   const [selectedNotifications, setSelectedNotifications] = useState<number[]>([])
