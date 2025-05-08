@@ -4,8 +4,8 @@ import { AdminNotificationsList } from "@/components/admin/admin-notifications-l
 import { Plus } from "lucide-react"
 
 export const metadata = {
-  title: "Notificações",
-  description: "Gerencie alertas e notificações da plataforma.",
+  title: "Notificações de Sistema",
+  description: "Gerencie alertas e notificações do sistema.",
 }
 
 export default function AdminNotificationsPage() {
@@ -13,8 +13,8 @@ export default function AdminNotificationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Notificações</h2>
-          <p className="text-muted-foreground">Gerencie alertas e notificações da plataforma.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Notificações de Sistema</h2>
+          <p className="text-muted-foreground">Gerencie alertas e notificações do sistema.</p>
         </div>
         <Button>
           <Plus className="mr-2 h-4 w-4" />

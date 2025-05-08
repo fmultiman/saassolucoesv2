@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Bell, Search, User } from "lucide-react"
+import { NotificationCenter } from "@/components/notification-center"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -61,11 +62,7 @@ export function AdminHeader() {
         </form>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-primary" />
-          <span className="sr-only">Notificações</span>
-        </Button>
+        <NotificationCenter />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">

@@ -115,9 +115,14 @@ export function AdminSidebar() {
       href: "/admin/faturamento",
     },
     {
-      title: "Notificações",
+      title: "Notificações de Sistema",
       icon: Bell,
       href: "/admin/notificacoes",
+    },
+    {
+      title: "Mensagens & Notificações",
+      icon: Bell,
+      href: "/admin/mensagens-notificacoes",
     },
     {
       title: "Métricas",
