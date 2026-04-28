@@ -2,10 +2,13 @@ import { NextResponse } from "next/server"
 import { migrateSolutions } from "@/lib/services/migration-service"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireAdminMaintenanceMode } from "@/lib/admin-maintenance"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 export async function POST() {
   const maintenanceModeError = requireAdminMaintenanceMode()
   if (maintenanceModeError) return maintenanceModeError
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
 
   try {
     // Primeiro, vamos tentar forçar uma atualização do cache do schema

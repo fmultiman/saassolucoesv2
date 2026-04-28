@@ -1,7 +1,11 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireSelfOrAdminApiUser } from "@/lib/api-auth"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireSelfOrAdminApiUser(params.id)
+  if (authError) return authError
+
   try {
     const id = params.id
 

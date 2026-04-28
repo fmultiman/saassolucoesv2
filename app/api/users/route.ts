@@ -1,18 +1,28 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { getCurrentApiUser } from "@/lib/api-auth"
 
 export async function POST(request: Request) {
   try {
     const supabaseAdmin = createServiceRoleClient()
 
     const { nome, email, tipoAcesso, plano, forceCreate } = await request.json()
+    const { user, userType: requesterType } = await getCurrentApiUser()
 
     if (!nome || !email) {
       return NextResponse.json({ error: "Nome e email são obrigatórios" }, { status: 400 })
     }
 
     const normalizedEmail = email.trim().toLowerCase()
-    const userType = tipoAcesso === "admin" ? "admin" : "client"
+    const isAdminRequest = requesterType === "admin"
+
+    if (!isAdminRequest) {
+      if (!user || user.email?.toLowerCase() !== normalizedEmail || tipoAcesso === "admin" || forceCreate) {
+        return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
+      }
+    }
+
+    const userType = isAdminRequest && tipoAcesso === "admin" ? "admin" : "client"
     const validPlans = ["free", "basic", "pro", "enterprise"]
     const userPlan = validPlans.includes(plano) ? plano : "free"
 
@@ -31,7 +41,7 @@ export async function POST(request: Request) {
 
     const existingAuthUser = authUsers?.users?.find((user) => user.email?.toLowerCase() === normalizedEmail)
 
-    if ((userInTable || existingAuthUser) && !forceCreate) {
+    if ((userInTable || existingAuthUser) && !(isAdminRequest && forceCreate)) {
       return NextResponse.json({ error: "Usuário com este email já existe" }, { status: 400 })
     }
 

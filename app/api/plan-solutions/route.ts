@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 // GET /api/plan-solutions - Buscar associações entre planos e soluções
 export async function GET(request: NextRequest) {
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/plan-solutions - Criar uma nova associação entre plano e solução
 export async function POST(request: NextRequest) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { plan_id, solution_id, custom_price, custom_limits } = body

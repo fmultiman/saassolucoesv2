@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
 // GET - Buscar todas as soluções
@@ -21,6 +22,9 @@ export async function GET() {
 
 // POST - Criar uma nova solução
 export async function POST(request: NextRequest) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const body = await request.json()
 

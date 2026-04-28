@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 export const dynamic = "force-dynamic" // Garantir que a rota seja sempre dinâmica
 
 export async function GET() {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const supabase = createServiceRoleClient()
 

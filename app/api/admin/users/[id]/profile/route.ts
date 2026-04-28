@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 // Schema de validação para atualização de perfil
 const profileUpdateSchema = z.object({
@@ -20,6 +21,9 @@ const profileUpdateSchema = z.object({
 })
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const userId = params.id
     const supabase = createServerClient(await cookies())

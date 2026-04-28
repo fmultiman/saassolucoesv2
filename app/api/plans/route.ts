@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import { NextResponse } from "next/server"
 
 // GET - Listar todos os planos
@@ -22,6 +23,9 @@ export async function GET() {
 
 // POST - Criar um novo plano
 export async function POST(request: Request) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { name, description, price, features } = body

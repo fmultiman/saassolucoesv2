@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { setupUserContentBucket } from "@/lib/supabase/storage-setup"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 export async function POST(request: Request) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const supabase = createServerClient(await cookies())
 

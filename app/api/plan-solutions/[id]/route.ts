@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 // GET /api/plan-solutions/[id] - Buscar uma associação específica
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -30,6 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 // PATCH /api/plan-solutions/[id] - Atualizar uma associação específica
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const id = Number.parseInt(params.id, 10)
     if (isNaN(id)) {
@@ -65,6 +69,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 // DELETE /api/plan-solutions/[id] - Remover uma associação específica
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const id = Number.parseInt(params.id, 10)
     if (isNaN(id)) {

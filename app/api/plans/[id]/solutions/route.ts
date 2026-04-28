@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { PlansService } from "@/lib/services/plans-service"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 
@@ -64,6 +65,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 // POST /api/plans/[id]/solutions - Adicionar uma solução a um plano
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const planId = Number.parseInt(params.id, 10)
     if (isNaN(planId)) {

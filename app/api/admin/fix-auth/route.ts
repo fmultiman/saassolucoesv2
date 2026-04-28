@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/admin"
 import { requireAdminMaintenanceMode } from "@/lib/admin-maintenance"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import fs from "fs"
 import path from "path"
 
 export async function POST() {
   const maintenanceModeError = requireAdminMaintenanceMode()
   if (maintenanceModeError) return maintenanceModeError
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
 
   try {
     const supabase = createClient()

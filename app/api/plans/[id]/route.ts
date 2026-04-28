@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import { NextResponse } from "next/server"
 
 // GET - Obter um plano específico
@@ -28,6 +29,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 // PUT - Atualizar um plano específico
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const id = params.id
     const body = await request.json()
@@ -75,6 +79,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 // DELETE - Excluir um plano específico
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const id = params.id
 

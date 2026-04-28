@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { initializeStorage } from "@/lib/supabase/storage-init"
+import { requireAdminApiUser } from "@/lib/api-auth"
 
 export async function POST() {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const result = await initializeStorage()
 

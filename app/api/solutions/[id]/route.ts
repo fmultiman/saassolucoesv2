@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
 // GET - Buscar uma solução por ID
@@ -22,6 +23,9 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 
 // PUT - Atualizar uma solução
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const { id } = params
     const body = await request.json()
@@ -43,6 +47,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 // DELETE - Excluir uma solução
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
+
   try {
     const { id } = params
     const supabase = createServiceRoleClient()

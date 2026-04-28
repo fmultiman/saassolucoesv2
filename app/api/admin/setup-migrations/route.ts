@@ -1,12 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireAdminMaintenanceMode } from "@/lib/admin-maintenance"
+import { requireAdminApiUser } from "@/lib/api-auth"
 import fs from "fs/promises"
 import path from "path"
 
 export async function POST(request: NextRequest) {
   const maintenanceModeError = requireAdminMaintenanceMode()
   if (maintenanceModeError) return maintenanceModeError
+  const authError = await requireAdminApiUser()
+  if (authError) return authError
 
   try {
     // Ler o arquivo SQL
