@@ -15,8 +15,7 @@ import { Loader2, CuboidIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 
 const formSchema = z.object({
   email: z.string().email("Email inválido"),

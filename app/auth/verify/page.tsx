@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 
 export default function VerifyPage() {
   const router = useRouter()

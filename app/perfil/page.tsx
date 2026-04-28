@@ -16,8 +16,7 @@ import { AvatarUpload } from "@/components/avatar-upload"
 import { ProfileForm } from "@/components/profile-form"
 import { ChangePasswordBlock } from "@/components/change-password-block" // ✅ NOVO
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
 

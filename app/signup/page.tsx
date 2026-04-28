@@ -12,8 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 import { getAuthRedirectUrls, logAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 
 export default function SignupPage() {
   const searchParams = useSearchParams()

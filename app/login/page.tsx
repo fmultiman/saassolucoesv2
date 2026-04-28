@@ -11,8 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon } from "lucide-react"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const router = useRouter()

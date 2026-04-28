@@ -12,8 +12,7 @@ import { useRouter } from "next/navigation"
 import { ProfileForm } from "@/components/profile-form"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChangePasswordBlock } from "@/components/change-password-block";
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { supabase } from "@/lib/supabase/client"
 
 export default function AdminProfilePage() {
   const { user, loading, error, updateProfile, refreshProfile, checkSession, refreshSession } = useCurrentUser()
