@@ -20,7 +20,7 @@ export async function POST() {
 
     try {
       sql = fs.readFileSync(migrationPath, "utf8")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao ler arquivo de migração:", error)
       return NextResponse.json(
         {

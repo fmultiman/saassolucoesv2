@@ -169,7 +169,7 @@ export default function ResetPasswordPage() {
                   required
                   disabled={!tokenValid}
                 />
-                <PasswordStrengthIndicator password={password} />
+                <PasswordStrengthIndicator strength={password ? 1 : 0} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>

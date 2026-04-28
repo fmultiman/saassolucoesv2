@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limiting - 3 solicitações por hora
-    const identifier = `email-change-${user.id}`
+    const identifier = `email-change-${user.userId}`
     const { success, limit, remaining } = await rateLimit(identifier, 3, 3600)
 
     if (!success) {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     // Solicitar mudança de email
-    await requestEmailChange(user.id, email)
+    await requestEmailChange(user.userId, email)
 
     return NextResponse.json({
       success: true,

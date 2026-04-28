@@ -8,10 +8,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
+    if (Number.isNaN(solutionId)) {
+      return NextResponse.json({ error: "ID da solucao invalido" }, { status: 400 })
+    }
     const { is_active } = await request.json()
 
     const supabase = createServiceRoleClient()
-    const { data, error } = await supabase.from("solutions").update({ is_active }).eq("id", id).select().single()
+    const { data, error } = await supabase.from("solutions").update({ is_active }).eq("id", solutionId).select().single()
 
     if (error) {
       console.error(`Erro ao atualizar status da solução ${id}:`, error)

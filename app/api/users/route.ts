@@ -69,6 +69,10 @@ export async function POST(request: Request) {
       userId = created.user.id
     }
 
+    if (!userId) {
+      return NextResponse.json({ error: "Nao foi possivel identificar o usuario" }, { status: 500 })
+    }
+
     // 🔄 Atualizar ou inserir na tabela users
     const { data: existing, error: findUserError } = await supabaseAdmin
       .from("users")

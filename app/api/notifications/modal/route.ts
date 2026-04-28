@@ -30,6 +30,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   // Filtra para retornar apenas as não lidas
-  const modal = data?.find((n) => !n.user_notifications?.read_at);
+  const modal = data?.find((n) => !n.user_notifications?.some((notification) => notification.read_at));
   return NextResponse.json(modal || null);
 }

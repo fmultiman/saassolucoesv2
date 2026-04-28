@@ -31,7 +31,7 @@ export async function GET() {
 
     // Listar arquivos de migração
     const migrationsDir = path.join(process.cwd(), "migrations")
-    let files = []
+    let files: string[] = []
 
     try {
       const dirExists = await fs

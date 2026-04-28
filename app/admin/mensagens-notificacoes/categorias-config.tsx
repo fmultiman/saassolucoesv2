@@ -3,7 +3,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const DEFAULT_CATEGORIES = [
+type NotificationCategory = {
+  key: string
+  label: string
+}
+
+const DEFAULT_CATEGORIES: NotificationCategory[] = [
   { key: "sistema", label: "Sistema" },
   { key: "usuarios", label: "Usuários" },
   { key: "metricas", label: "Métricas" },
@@ -11,7 +16,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export function CategoriasConfig() {
-  const [categories, setCategories] = useState(
+  const [categories, setCategories] = useState<NotificationCategory[]>(
     () => JSON.parse(localStorage.getItem("notificationCategories") || "null") || DEFAULT_CATEGORIES
   );
   const [editing, setEditing] = useState<string | null>(null);
@@ -23,8 +28,8 @@ export function CategoriasConfig() {
   };
 
   const handleSave = () => {
-    setCategories((prev) => {
-      const updated = prev.map((cat) =>
+    setCategories((prev: NotificationCategory[]) => {
+      const updated = prev.map((cat: NotificationCategory) =>
         cat.key === editing ? { ...cat, label: editValue } : cat
       );
       localStorage.setItem("notificationCategories", JSON.stringify(updated));
@@ -41,7 +46,7 @@ export function CategoriasConfig() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {categories.map((cat) => (
+          {categories.map((cat: NotificationCategory) => (
             <div key={cat.key} className="flex items-center gap-2">
               <span className="w-32 text-sm font-medium">{cat.key}</span>
               {editing === cat.key ? (

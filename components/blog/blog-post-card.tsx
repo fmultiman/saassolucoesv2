@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 interface BlogPostCardProps {
   post: {
     id: string
-    titulo: string
-    slug: string
-    imagem_capa?: string
-    conteudo?: string
-    data_publicacao: string
+    titulo: string | null
+    slug: string | null
+    imagem_capa?: string | null
+    conteudo?: string | null
+    data_publicacao: string | null
   }
 }
 
@@ -29,7 +29,7 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
         {post.imagem_capa ? (
           <Image
             src={post.imagem_capa || "/placeholder.svg"}
-            alt={post.titulo}
+            alt={post.titulo || "Post"}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -41,13 +41,13 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
         )}
       </div>
       <CardContent className="pt-6 flex-1">
-        <h3 className="text-xl font-bold mb-2 line-clamp-2">{post.titulo}</h3>
-        <p className="text-sm text-muted-foreground mb-2">{formatDate(post.data_publicacao)}</p>
+        <h3 className="text-xl font-bold mb-2 line-clamp-2">{post.titulo || "Sem titulo"}</h3>
+        {post.data_publicacao && <p className="text-sm text-muted-foreground mb-2">{formatDate(post.data_publicacao)}</p>}
         <p className="text-muted-foreground line-clamp-3">{getExcerpt(post.conteudo)}</p>
       </CardContent>
       <CardFooter>
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/blog/${post.slug}`}>Ler mais</Link>
+          <Link href={`/blog/${post.slug || post.id}`}>Ler mais</Link>
         </Button>
       </CardFooter>
     </Card>

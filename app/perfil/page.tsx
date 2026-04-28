@@ -23,27 +23,27 @@ import { Sidebar } from "@/components/sidebar"
 // Interface baseada nos campos mais comuns de perfis SaaS
 export interface Profile {
   id?: string
-  name?: string
-  email?: string
-  bio?: string
-  phone?: string
-  job_title?: string
-  company?: string
-  website?: string
-  location?: string
-  avatar_url?: string
-  preferences?: Record<string, any>
-  company_name?: string
-  company_size?: string
-  industry?: string
-  address?: string
-  city?: string
-  state?: string
-  country?: string
-  postal_code?: string
-  social_links?: Record<string, string>
-  created_at?: string
-  updated_at?: string
+  name?: string | null
+  email?: string | null
+  bio?: string | null
+  phone?: string | null
+  job_title?: string | null
+  company?: string | null
+  website?: string | null
+  location?: string | null
+  avatar_url?: string | null
+  preferences?: any
+  company_name?: string | null
+  company_size?: string | null
+  industry?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  postal_code?: string | null
+  social_links?: any
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export default function PerfilPage() {

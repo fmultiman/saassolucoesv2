@@ -5,9 +5,12 @@ import { cookies } from "next/headers"
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
+    if (Number.isNaN(solutionId)) {
+      return NextResponse.json({ available: false, reason: "ID da solucao invalido" }, { status: 400 })
+    }
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
-    const solutionId = id
 
     if (!userId) {
       return NextResponse.json({ available: false, reason: "Usuário não autenticado" }, { status: 401 })
@@ -18,11 +21,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Buscar o plano do usuário
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("plan")
+      .select("plan_id")
       .eq("id", userId)
       .single()
 
-    if (userError || !userData) {
+    if (userError || !userData || !userData.plan_id) {
       return NextResponse.json({ available: false, reason: "Usuário não encontrado" }, { status: 404 })
     }
 
@@ -30,13 +33,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { data: planSolutions, error: planSolutionsError } = await supabase
       .from("plan_solutions")
       .select("solution_id")
-      .eq("plan_id", userData.plan)
+      .eq("plan_id", userData.plan_id)
 
     if (planSolutionsError) {
       return NextResponse.json({ available: false, reason: "Erro ao buscar soluções do plano" }, { status: 500 })
     }
 
-    const isAvailable = planSolutions?.some((ps: any) => ps.solution_id === solutionId)
+    const isAvailable = planSolutions?.some((ps) => ps.solution_id === solutionId)
 
     return NextResponse.json({ available: isAvailable })
   } catch (error) {

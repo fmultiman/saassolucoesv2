@@ -97,7 +97,7 @@ export function useCurrentUser() {
 
       const enhancedUser: UserWithProfile = {
         ...session.user,
-        user_type: userData?.user_type,
+        user_type: userData?.user_type || undefined,
         profile: profileData || null,
       }
 
@@ -127,6 +127,7 @@ export function useCurrentUser() {
 
   return {
     user,
+    profile: user?.profile || null,
     loading,
     error,
     updateProfile,

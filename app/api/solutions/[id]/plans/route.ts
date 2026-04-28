@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Extrair os IDs dos planos
-    const planIds = planSolutions.map((ps) => ps.plan_id)
+    const planIds = planSolutions.map((ps) => ps.plan_id).filter((planId): planId is number => planId !== null)
 
     // Buscar os planos correspondentes
     let query = supabase.from("plans").select("*").in("id", planIds)

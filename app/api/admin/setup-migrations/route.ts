@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient()
 
     // Tentar executar SQL diretamente usando a API PostgreSQL do Supabase
-    const { error } = await supabase
-      .rpc("pg_query", { query: sqlContent })
+    const { error } = await (supabase
+      .rpc("pg_query", { query: sqlContent }) as any)
       .catch(() => ({ error: { message: "Função pg_query não disponível" } }))
 
     if (error) {

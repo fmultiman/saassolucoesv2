@@ -44,12 +44,12 @@ export default async function AdminUsersPage() {
       return {
         id: authUser.id,
         name: authUser.user_metadata?.name || publicUser?.name || "Sem nome",
-        email: authUser.email,
+        email: authUser.email || publicUser?.email || "",
         status: publicUser?.status || "active",
         plan: publicUser?.plan || "free",
         user_type: publicUser?.user_type || authUser.user_metadata?.tipo || "cliente",
         created_at: authUser.created_at,
-        last_sign_in_at: authUser.last_sign_in_at,
+        last_sign_in_at: authUser.last_sign_in_at || undefined,
         active_solutions: publicUser?.active_solutions || 0,
       }
     }) || []

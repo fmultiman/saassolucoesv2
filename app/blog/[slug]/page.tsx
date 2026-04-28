@@ -34,8 +34,8 @@ export async function generateMetadata({ params }: BlogPostPageProps, parent: Re
   }
 
   return generateDefaultMetadata({
-    title: post.title || post.titulo,
-    description: post.description || `Leia mais sobre ${post.title || post.titulo}`,
+    title: post.title || post.titulo || "Post",
+    description: post.description || `Leia mais sobre ${post.title || post.titulo || "este artigo"}`,
     image: post.featured_image || post.imagem_capa || undefined,
   })
 }
@@ -68,7 +68,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="mb-8 rounded-lg overflow-hidden">
             <img
               src={post.imagem_capa || post.featured_image || "/placeholder.svg"}
-              alt={post.titulo || post.title}
+              alt={post.titulo || post.title || "Post"}
               className="w-full h-auto object-cover"
             />
           </div>

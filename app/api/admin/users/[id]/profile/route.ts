@@ -65,12 +65,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Usar o cliente com role de serviço para atualizar qualquer usuário
     const supabaseAdmin = createServiceRoleClient()
+    const { status, plan, name, ...profileData } = validData
 
     // Atualizar perfil no banco de dados
     const { error } = await supabaseAdmin
       .from("users")
       .update({
-        ...validData,
+        ...(status ? { status } : {}),
+        ...(plan ? { plan } : {}),
+        ...(name ? { name } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId)
@@ -78,6 +81,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (error) {
       console.error("Erro ao atualizar perfil (admin):", error)
       return NextResponse.json({ error: "Erro ao atualizar perfil", details: error }, { status: 500 })
+    }
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .upsert({
+        id: userId,
+        ...(name ? { name } : {}),
+        ...profileData,
+        updated_at: new Date().toISOString(),
+      })
+
+    if (profileError) {
+      console.error("Erro ao atualizar dados do perfil (admin):", profileError)
+      return NextResponse.json({ error: "Erro ao atualizar perfil", details: profileError }, { status: 500 })
     }
 
     console.log("Perfil atualizado com sucesso (admin)")

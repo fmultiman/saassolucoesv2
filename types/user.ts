@@ -18,7 +18,7 @@ export interface Profile {
   website: string | null
   location: string | null
   avatar_url: string | null
-  preferences: Record<string, any> | null
+  preferences: Json | null
   company_name: string | null
   company_size: string | null
   industry: string | null
@@ -27,10 +27,11 @@ export interface Profile {
   state: string | null
   country: string | null
   postal_code: string | null
-  social_links: Record<string, string> | null
+  social_links: Json | null
   profile_complete: boolean | null
   created_at: string | null
   updated_at: string | null
 }
 
 export type ProfileUpdateData = Partial<Omit<Profile, "id" | "created_at" | "updated_at">>
+import type { Json } from "@/lib/supabase/types"
