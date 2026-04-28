@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 // POST: Marca uma notificação como lida para o usuário atual
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createServerClient(cookies());
+  const supabase = createServerClient(await cookies());
   // Autenticação
   const {
     data: { session },

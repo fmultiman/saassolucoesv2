@@ -22,7 +22,7 @@ const profileUpdateSchema = z.object({
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const userId = params.id
-    const supabase = createServerClient(cookies())
+    const supabase = createServerClient(await cookies())
 
     // Verificar autenticação e permissões de admin
     const {

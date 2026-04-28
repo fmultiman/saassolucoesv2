@@ -29,7 +29,7 @@ const profileUpdateSchema = z
 
 export async function PUT(request: Request) {
   try {
-    const cookiesStore = cookies()
+    const cookiesStore = await cookies()
     const supabase = createServerClient(cookiesStore)
 
     // Verificar autenticação
@@ -100,7 +100,7 @@ export async function PUT(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const cookiesStore = cookies()
+    const cookiesStore = await cookies()
     const supabase = createServerClient(cookiesStore)
 
     // Verificar autenticação

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 // GET: Busca notificação tipo 'modal' não lida para o usuário atual
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient(cookies());
+  const supabase = createServerClient(await cookies());
   // Autenticação
   const {
     data: { session },

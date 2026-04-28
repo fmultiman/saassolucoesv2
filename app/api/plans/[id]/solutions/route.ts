@@ -10,7 +10,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const countOnly = searchParams.get("count") === "true"
     const planId = params.id
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
 
     if (countOnly) {

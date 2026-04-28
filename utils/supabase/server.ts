@@ -9,7 +9,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/env"
  * @param cookieStore - The Next.js cookie store.
  * @returns A Supabase client configured for server-side usage.
  */
-export function createClient(cookieStore: ReturnType<typeof cookies>) {
+export function createClient(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
 
   return createSupabaseServerClient<Database>(

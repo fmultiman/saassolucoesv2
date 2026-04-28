@@ -5,7 +5,7 @@ import { setupUserContentBucket } from "@/lib/supabase/storage-setup"
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerClient(cookies())
+    const supabase = createServerClient(await cookies())
 
     // Verificar autenticação e permissões de admin
     const {

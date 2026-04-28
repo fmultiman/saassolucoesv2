@@ -6,7 +6,7 @@ import { cookies } from "next/headers"
 export async function GET(request: NextRequest) {
   try {
     // Verificar autenticação e permissões
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(cookieStore)
 
     const {

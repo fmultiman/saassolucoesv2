@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ available: false, reason: "Usuário não autenticado" }, { status: 401 })
     }
 
-    const supabase = createServerClient(cookies())
+    const supabase = createServerClient(await cookies())
 
     // Buscar o plano do usuário
     const { data: userData, error: userError } = await supabase

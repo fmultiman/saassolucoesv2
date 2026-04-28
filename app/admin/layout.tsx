@@ -11,7 +11,7 @@ import { redirect } from "next/navigation"
 export { viewport }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createServerClient(cookies())
+  const supabase = createServerClient(await cookies())
   const {
     data: { user },
   } = await supabase.auth.getUser()

@@ -17,7 +17,7 @@ interface AdminPostEditPageProps {
 }
 
 export default async function AdminPostEditPage({ params }: AdminPostEditPageProps) {
-  const supabase = createServerClient(cookies())
+  const supabase = createServerClient(await cookies())
 
   // Verificar se o usuário está autenticado
   const {

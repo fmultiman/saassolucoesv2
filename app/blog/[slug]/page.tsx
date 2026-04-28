@@ -15,7 +15,7 @@ interface BlogPostPageProps {
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps, parent: ResolvingMetadata): Promise<Metadata> {
-  const supabase = createServerClient(cookies())
+  const supabase = createServerClient(await cookies())
 
   const { data: post } = await supabase
     .from("posts")
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: BlogPostPageProps, parent: Re
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const supabase = createServerClient(cookies())
+  const supabase = createServerClient(await cookies())
 
   const { data: post, error } = await supabase
     .from("posts")

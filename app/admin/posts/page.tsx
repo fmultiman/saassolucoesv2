@@ -12,7 +12,7 @@ export const metadata = {
 }
 
 export default async function AdminPostsPage() {
-  const supabase = createServerClient(cookies())
+  const supabase = createServerClient(await cookies())
 
   // Verificar se o usuário está autenticado
   const {

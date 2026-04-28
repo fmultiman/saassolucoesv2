@@ -7,7 +7,7 @@ import path from "path"
 export async function GET() {
   try {
     // Verificar autenticação
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(cookieStore)
 
     const {
