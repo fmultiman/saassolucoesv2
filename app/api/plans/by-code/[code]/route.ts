@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 
-export async function GET(request: Request, { params }: { params: { code: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
-    const supabase = createServerClient()
-    const { code } = params
+    const supabase = createServerClient(await cookies())
+    const { code } = await params
 
     if (!code) {
       return NextResponse.json({ error: "Código do plano não fornecido" }, { status: 400 })

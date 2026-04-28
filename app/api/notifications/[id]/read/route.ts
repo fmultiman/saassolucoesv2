@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
 // POST: Marca uma notificação como lida para o usuário atual
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = createServerClient(await cookies());
   // Autenticação
   const {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
   const userId = session.user.id;
-  const notificationId = params.id;
+  const { id: notificationId } = await params;
   // Marca como lida (upsert em user_notifications)
   // Primeiro tenta encontrar, se não existir, cria
   const { data: existing, error: findError } = await supabase

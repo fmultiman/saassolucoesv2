@@ -20,12 +20,12 @@ const profileUpdateSchema = z.object({
   plan: z.enum(["free", "basic", "pro", "enterprise"]).optional(),
 })
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdminApiUser()
   if (authError) return authError
 
   try {
-    const userId = params.id
+    const { id: userId } = await params
     const supabase = createServerClient(await cookies())
 
     // Verificar autenticação e permissões de admin

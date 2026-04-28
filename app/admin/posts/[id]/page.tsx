@@ -11,12 +11,13 @@ export const metadata = {
 }
 
 interface AdminPostEditPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function AdminPostEditPage({ params }: AdminPostEditPageProps) {
+  const { id } = await params
   const supabase = createServerClient(await cookies())
 
   // Verificar se o usuário está autenticado
@@ -30,13 +31,13 @@ export default async function AdminPostEditPage({ params }: AdminPostEditPagePro
   }
 
   // Se o ID for "novo", estamos criando um novo post
-  const isNewPost = params.id === "novo"
+  const isNewPost = id === "novo"
 
   // Se não for um novo post, buscar o post existente
   let post = null
 
   if (!isNewPost) {
-    const { data, error } = await supabase.from("posts").select("*").eq("id", params.id).single()
+    const { data, error } = await supabase.from("posts").select("*").eq("id", id).single()
 
     if (error || !data) {
       notFound()

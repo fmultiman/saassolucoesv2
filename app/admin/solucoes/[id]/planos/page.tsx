@@ -1,8 +1,9 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { SolutionPlansManager } from "@/components/admin/solution-plans-manager"
 
-export default async function SolutionPlansPage({ params }: { params: { id: string } }) {
-  const solutionId = Number.parseInt(params.id, 10)
+export default async function SolutionPlansPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const solutionId = Number.parseInt(id, 10)
 
   // Buscar dados da solução
   const supabase = createServiceRoleClient()

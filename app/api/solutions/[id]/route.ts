@@ -3,9 +3,9 @@ import { requireAdminApiUser } from "@/lib/api-auth"
 import { type NextRequest, NextResponse } from "next/server"
 
 // GET - Buscar uma solução por ID
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     const supabase = createServiceRoleClient()
     const { data, error } = await supabase.from("solutions").select("*").eq("id", id).single()
 
@@ -22,12 +22,12 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 }
 
 // PUT - Atualizar uma solução
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdminApiUser()
   if (authError) return authError
 
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     const supabase = createServiceRoleClient()
@@ -46,12 +46,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Excluir uma solução
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdminApiUser()
   if (authError) return authError
 
   try {
-    const { id } = params
+    const { id } = await params
     const supabase = createServiceRoleClient()
     const { error } = await supabase.from("solutions").delete().eq("id", id)
 

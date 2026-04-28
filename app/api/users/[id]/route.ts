@@ -2,13 +2,12 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireSelfOrAdminApiUser } from "@/lib/api-auth"
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const authError = await requireSelfOrAdminApiUser(params.id)
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const authError = await requireSelfOrAdminApiUser(id)
   if (authError) return authError
 
   try {
-    const id = params.id
-
     const supabase = createServiceRoleClient()
 
     const { data, error } = await supabase

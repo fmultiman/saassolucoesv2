@@ -1,7 +1,8 @@
 import { PlanSolutionsManager } from "@/components/admin/plan-solutions-manager"
 
-export default function PlanSolutionsPage({ params }: { params: { id: string } }) {
-  const planId = Number.parseInt(params.id, 10)
+export default async function PlanSolutionsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const planId = Number.parseInt(id, 10)
 
   return (
     <div className="space-y-6">

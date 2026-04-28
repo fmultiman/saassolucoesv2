@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 
 // GET /api/solutions/[id]/plans - Buscar planos disponíveis para uma solução específica
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const solutionId = Number.parseInt(params.id, 10)
+    const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
     if (isNaN(solutionId)) {
       return NextResponse.json({ error: "ID da solução inválido" }, { status: 400 })
     }

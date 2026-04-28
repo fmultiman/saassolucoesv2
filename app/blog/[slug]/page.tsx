@@ -9,18 +9,19 @@ import { formatDate } from "@/lib/utils"
 export { viewport }
 
 interface BlogPostPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps, parent: ResolvingMetadata): Promise<Metadata> {
+  const { slug } = await params
   const supabase = createServerClient(await cookies())
 
   const { data: post } = await supabase
     .from("posts")
     .select("titulo, title, description, conteudo, featured_image, imagem_capa, publicado")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("publicado", true)
     .single()
 
@@ -40,12 +41,13 @@ export async function generateMetadata({ params }: BlogPostPageProps, parent: Re
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const { slug } = await params
   const supabase = createServerClient(await cookies())
 
   const { data: post, error } = await supabase
     .from("posts")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .eq("publicado", true)
     .single()
 

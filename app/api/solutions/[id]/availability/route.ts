@@ -2,11 +2,12 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
-    const solutionId = params.id
+    const solutionId = id
 
     if (!userId) {
       return NextResponse.json({ available: false, reason: "Usuário não autenticado" }, { status: 401 })

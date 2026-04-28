@@ -5,11 +5,12 @@ import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 
 // GET /api/plans/[id]/solutions - Buscar soluções associadas a um plano
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const countOnly = searchParams.get("count") === "true"
-    const planId = params.id
+    const planId = id
 
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
@@ -64,12 +65,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // POST /api/plans/[id]/solutions - Adicionar uma solução a um plano
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdminApiUser()
   if (authError) return authError
 
   try {
-    const planId = Number.parseInt(params.id, 10)
+    const { id } = await params
+    const planId = Number.parseInt(id, 10)
     if (isNaN(planId)) {
       return NextResponse.json({ error: "ID do plano inválido" }, { status: 400 })
     }
