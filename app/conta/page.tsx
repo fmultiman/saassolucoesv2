@@ -129,7 +129,7 @@ export default function ContaPage() {
                           <Label htmlFor="email">Email</Label>
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            <Input id="email" type="email" value={profile.email} disabled />
+                            <Input id="email" type="email" value={profile.email || ""} disabled />
                           </div>
                         </div>
                         <div className="space-y-2">

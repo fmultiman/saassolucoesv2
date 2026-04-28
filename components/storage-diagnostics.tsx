@@ -63,9 +63,9 @@ export function StorageDiagnostics({ userId }: StorageDiagnosticsProps) {
           })
           .catch(() => ({ data: null }))
 
-        setResult((prev) => ({ ...prev, errorDetails }))
+        setResult((prev: any) => ({ ...prev, errorDetails }))
       } else {
-        setResult((prev) => ({ ...prev, clientUpload: uploadData }))
+        setResult((prev: any) => ({ ...prev, clientUpload: uploadData }))
       }
     } catch (err: any) {
       console.error("Erro ao diagnosticar storage:", err)
@@ -141,7 +141,7 @@ export function StorageDiagnostics({ userId }: StorageDiagnosticsProps) {
       )}
 
       {result && !error && (
-        <Alert variant="success" className="bg-green-50 border-green-200">
+        <Alert className="bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-500" />
           <AlertTitle className="text-green-700">Storage verificado</AlertTitle>
           <AlertDescription>

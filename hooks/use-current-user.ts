@@ -127,6 +127,8 @@ export function useCurrentUser() {
 
   return {
     user,
+    id: user?.id,
+    roles: user?.user_type ? [user.user_type] : [],
     profile: user?.profile || null,
     loading,
     error,

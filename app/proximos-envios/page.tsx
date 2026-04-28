@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+type EnvioStatus = "Agendado" | "Em Pausa" | "Cancelado"
+
 export default function ProximosEnviosPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -20,7 +22,7 @@ export default function ProximosEnviosPage() {
       descricao: "Lembrete automático para consultas agendadas",
       horario: "Hoje, 18:00",
       solucao: "Agendamento Inteligente",
-      status: "Agendado",
+      status: "Agendado" as EnvioStatus,
       destinatarios: 12,
     },
     {
@@ -29,7 +31,7 @@ export default function ProximosEnviosPage() {
       descricao: "Mensagem para clientes com carrinho abandonado",
       horario: "Amanhã, 10:00",
       solucao: "Recuperação de Clientes",
-      status: "Agendado",
+      status: "Agendado" as EnvioStatus,
       destinatarios: 34,
     },
     {
@@ -38,7 +40,7 @@ export default function ProximosEnviosPage() {
       descricao: "Pesquisa pós-atendimento",
       horario: "Amanhã, 14:30",
       solucao: "Feedback",
-      status: "Agendado",
+      status: "Agendado" as EnvioStatus,
       destinatarios: 56,
     },
     {
@@ -47,7 +49,7 @@ export default function ProximosEnviosPage() {
       descricao: "Mensagem de felicitações e cupom de desconto",
       horario: "15/04/2023, 08:00",
       solucao: "Relacionamento",
-      status: "Agendado",
+      status: "Agendado" as EnvioStatus,
       destinatarios: 7,
     },
     {
@@ -56,18 +58,18 @@ export default function ProximosEnviosPage() {
       descricao: "Campanha para clientes inativos há mais de 30 dias",
       horario: "16/04/2023, 09:00",
       solucao: "Recuperação de Clientes",
-      status: "Em Pausa",
+      status: "Em Pausa" as EnvioStatus,
       destinatarios: 128,
     },
   ]
 
-  const statusColors = {
+  const statusColors: Record<EnvioStatus, string> = {
     Agendado: "bg-green-500/10 text-green-500",
     "Em Pausa": "bg-orange-500/10 text-orange-500",
     Cancelado: "bg-red-500/10 text-red-500",
   }
 
-  const statusIcons = {
+  const statusIcons: Record<EnvioStatus, typeof CheckCircle> = {
     Agendado: CheckCircle,
     "Em Pausa": PauseCircle,
     Cancelado: AlertCircle,

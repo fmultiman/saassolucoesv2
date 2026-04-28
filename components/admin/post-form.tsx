@@ -35,7 +35,7 @@ const formSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "O slug deve conter apenas letras minúsculas, números e hífens"),
   imagem_capa: z.string().url("URL inválida").optional().or(z.literal("")),
   conteudo: z.string().optional(),
-  publicado: z.boolean().default(false),
+  publicado: z.boolean(),
 })
 
 interface PostFormProps {

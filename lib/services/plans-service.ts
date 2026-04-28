@@ -284,7 +284,15 @@ export class PlansService {
         .replace(/[^a-z0-9]/g, "-")
     }
 
-    const { data, error } = await supabase.from("plans").insert(planData).select().single()
+    if (!planData.name) {
+      throw new Error("Nome do plano é obrigatório")
+    }
+
+    const { data, error } = await supabase
+      .from("plans")
+      .insert({ ...planData, name: planData.name })
+      .select()
+      .single()
 
     if (error) {
       console.error("Erro ao criar plano:", error)

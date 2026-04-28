@@ -39,6 +39,7 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -53,16 +54,53 @@ import Link from "next/link"
 
 export { viewport }
 
+type SolucaoDetalhes = {
+  id: string
+  nome: string
+  descricao: string
+  categoria: string
+  status: string
+  ativacoes: number
+  estatisticas: {
+    interacoes?: number
+    tempoEconomizado?: string
+    taxaResolucao?: string
+    [key: string]: string | number | undefined
+  }
+  configuracoes: {
+    mensagemPadrao?: string
+    horasFuncionamento?: string
+    notificacoes?: boolean
+    [key: string]:
+      | string
+      | number
+      | boolean
+      | Array<{ pergunta: string; resposta: string }>
+      | undefined
+  }
+}
+
+type CategoriaInfo = {
+  icon: LucideIcon
+  cor: string
+  label: string
+}
+
+type UpgradePlan = {
+  name: string
+}
+
 export default function SolucaoDetalhesPage() {
   const params = useParams()
   const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [solucao, setSolucao] = useState(null)
+  const [solucao, setSolucao] = useState<SolucaoDetalhes | null>(null)
   const [isActive, setIsActive] = useState(false)
   const { user } = useCurrentUser()
   const [available, setAvailable] = useState(false)
   const [reason, setReason] = useState("")
-  const [upgradePlan, setUpgradePlan] = useState(null)
+  const [upgradePlan, setUpgradePlan] = useState<UpgradePlan | null>(null)
+  const solutionId = Array.isArray(params.id) ? params.id[0] : params.id
 
   // Verificar se o usuário tem acesso à solução
   const checkAvailability = useCallback(async (solutionId: string, userId: string) => {
@@ -87,14 +125,14 @@ export default function SolucaoDetalhesPage() {
   }, [])
 
   useEffect(() => {
-    if (params.id && user?.id) {
-      checkAvailability(String(params.id), user.id).then((data) => {
+    if (solutionId && user?.id) {
+      checkAvailability(solutionId, user.id).then((data) => {
         setAvailable(data.available)
         setReason(data.reason)
         setUpgradePlan(data.upgradePlan)
       })
     }
-  }, [params.id, user?.id, checkAvailability])
+  }, [solutionId, user?.id, checkAvailability])
 
   // Se a solução não estiver disponível, mostre uma mensagem
   if (!available) {
@@ -372,14 +410,21 @@ export default function SolucaoDetalhesPage() {
 
   useEffect(() => {
     // Simular busca da solução pelo ID
-    const id = params.id
-    if (id in solucoesDados) {
-      setSolucao(solucoesDados[id])
-      setIsActive(solucoesDados[id].status === "ativo")
+    const id = solutionId
+    if (!id) return
+
+    const solucoesPorId = solucoesDados as Record<string, SolucaoDetalhes>
+    const categoriasPorId = categoriasSolucoes as Record<string, string>
+    const descricoesPorId = descricoesSolucoes as Record<string, string>
+
+    if (id in solucoesPorId) {
+      const solucaoEncontrada = solucoesPorId[id]
+      setSolucao(solucaoEncontrada)
+      setIsActive(solucaoEncontrada.status === "ativo")
     } else {
       // Solução genérica para IDs não encontrados nos dados fictícios
-      const categoria = categoriasSolucoes[id] || "atendimento"
-      const descricao = descricoesSolucoes[id] || "Descrição da solução"
+      const categoria = categoriasPorId[id] || "atendimento"
+      const descricao = descricoesPorId[id] || "Descrição da solução"
 
       setSolucao({
         id,
@@ -403,7 +448,7 @@ export default function SolucaoDetalhesPage() {
         },
       })
     }
-  }, [params.id])
+  }, [solutionId])
 
   if (!solucao) {
     return (
@@ -426,8 +471,10 @@ export default function SolucaoDetalhesPage() {
     )
   }
 
-  const categoriaInfo = iconesPorCategoria[solucao.categoria]
-  const SolucaoIcone = iconesPorId[solucao.id] || categoriaInfo.icon
+  const categoriasIcones = iconesPorCategoria as Record<string, CategoriaInfo>
+  const iconesSolucoes = iconesPorId as Record<string, LucideIcon>
+  const categoriaInfo = categoriasIcones[solucao.categoria] || categoriasIcones.atendimento
+  const SolucaoIcone = iconesSolucoes[solucao.id] || categoriaInfo.icon
 
   const handleToggleActive = () => {
     setIsActive(!isActive)

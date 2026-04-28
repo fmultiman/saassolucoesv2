@@ -118,7 +118,7 @@ export function SolutionPlansManager({ solutionId, solutionName }: SolutionPlans
       console.error("Erro ao adicionar plano à solução:", error)
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível associar o plano à solução.",
+        description: error instanceof Error ? error.message : "Não foi possível associar o plano à solução.",
         variant: "destructive",
       })
     } finally {

@@ -16,6 +16,7 @@ import {
   Calendar,
   Mail,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { SolucaoCard } from "@/components/solucao-card"
@@ -24,13 +25,34 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useCurrentUser } from "@/hooks/use-current-user"
 
+type SolucaoAtiva = {
+  id: string
+  nome: string
+  descricao: string
+  categoria: string
+  icone: LucideIcon
+  cor: string
+  status: string
+  bloqueado: boolean
+}
+
+type ApiSolution = {
+  id: string | number
+  name: string
+  description: string | null
+  category: string | null
+  icon: string | null
+  color: string | null
+  is_active: boolean
+}
+
 export function VisaoGeral() {
-  const [solucoesAtivas, setSolucoesAtivas] = useState([])
+  const [solucoesAtivas, setSolucoesAtivas] = useState<SolucaoAtiva[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useCurrentUser()
 
   // Mapeamento de ícones
-  const iconMap: Record<string, any> = {
+  const iconMap: Record<string, LucideIcon> = {
     Bot: Bot,
     Users: Users,
     Calendar: Calendar,
@@ -67,7 +89,7 @@ export function VisaoGeral() {
         const data = await response.json()
 
         // Converter para o formato esperado pelo componente
-        const formattedSolutions = data.map((solution) => {
+        const formattedSolutions = data.map((solution: ApiSolution) => {
           const iconName = solution.icon || "Bot"
           const IconComponent = iconMap[iconName] || Bot
 

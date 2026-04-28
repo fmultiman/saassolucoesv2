@@ -38,6 +38,7 @@ type PlanSolution = {
 
 type PlanSolutionsManagerProps = {
   planId: number
+  onClose?: () => void
 }
 
 export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
@@ -136,7 +137,7 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
       console.error("Erro ao adicionar solução ao plano:", error)
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível adicionar a solução ao plano.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar a solução ao plano.",
         variant: "destructive",
       })
     } finally {

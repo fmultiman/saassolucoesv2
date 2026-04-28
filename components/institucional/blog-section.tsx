@@ -124,7 +124,7 @@ export function BlogSection() {
                       <div className="h-48 overflow-hidden">
                         <img
                           src={post.imagem_capa || "/placeholder.svg"}
-                          alt={post.titulo}
+                          alt={post.titulo || "Post do blog"}
                           className="h-full w-full object-cover transition-transform hover:scale-105"
                         />
                       </div>

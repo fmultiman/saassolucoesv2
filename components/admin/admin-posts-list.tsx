@@ -72,7 +72,9 @@ export function AdminPostsList({ posts: initialPosts }: AdminPostsListProps) {
                   <Badge variant={post.publicado ? "success" : "secondary"}>
                     {post.publicado ? "Publicado" : "Rascunho"}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">{formatDate(post.data_publicacao)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {post.data_publicacao ? formatDate(post.data_publicacao) : "Nao publicado"}
+                  </span>
                 </div>
               </div>
 

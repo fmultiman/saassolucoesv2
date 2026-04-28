@@ -22,7 +22,8 @@ export function AuthRedirectDiagnostics() {
 
       // Verificar configuração do Supabase
       const supabase = createAuthClient()
-      const { data: settings, error: settingsError } = await supabase.auth.getSettings()
+      const { data: settings, error: settingsError } =
+        (await (supabase.auth as any).getSettings?.()) ?? { data: null, error: null }
 
       if (settingsError) {
         throw new Error(`Erro ao obter configurações do Supabase: ${settingsError.message}`)

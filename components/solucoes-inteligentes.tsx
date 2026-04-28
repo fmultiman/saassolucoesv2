@@ -37,6 +37,7 @@ import {
   Layers,
   AlertCircle,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -54,23 +55,32 @@ type Solution = {
   name: string
   description: string | null
   category: string | null
+  icon?: string | null
+  activations?: number | null
   is_active: boolean
   custom_price?: number | null
   custom_limits?: Record<string, any> | null
 }
 
+type Categoria = {
+  id: string
+  label: string
+  icon?: LucideIcon
+  cor?: string
+}
+
 export function SolucoesInteligentes() {
   const [activeTab, setActiveTab] = useState("todos")
   const [searchTerm, setSearchTerm] = useState("")
-  const [visibleCategories, setVisibleCategories] = useState([])
-  const [hiddenCategories, setHiddenCategories] = useState([])
+  const [visibleCategories, setVisibleCategories] = useState<Categoria[]>([])
+  const [hiddenCategories, setHiddenCategories] = useState<Categoria[]>([])
   const [solutions, setSolutions] = useState<Solution[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const tabsListRef = useRef(null)
+  const tabsListRef = useRef<HTMLDivElement | null>(null)
   const { user } = useCurrentUser()
 
-  const categorias = [
+  const categorias: Categoria[] = [
     { id: "todos", label: "Todos" },
     { id: "atendimento", label: "Atendimento", icon: MessageSquare, cor: "bg-blue-500/10 text-blue-500" },
     { id: "vendas", label: "Vendas", icon: ShoppingCart, cor: "bg-green-500/10 text-green-500" },
@@ -83,7 +93,7 @@ export function SolucoesInteligentes() {
   ]
 
   // Mapeamento de ícones por categoria
-  const iconMap = {
+  const iconMap: Record<string, LucideIcon> = {
     MessageSquare,
     Calendar,
     ThumbsUp,
@@ -150,7 +160,7 @@ export function SolucoesInteligentes() {
         setSolutions(data)
       } catch (err) {
         console.error("Erro ao carregar soluções:", err)
-        setError(err.message)
+        setError(err instanceof Error ? err.message : "Erro desconhecido")
       } finally {
         setLoading(false)
       }
@@ -179,12 +189,12 @@ export function SolucoesInteligentes() {
   )
 
   // Encontrar a categoria correspondente para uma solução
-  const getCategoriaInfo = (categoriaId) => {
+  const getCategoriaInfo = (categoriaId?: string | null) => {
     return categorias.find((cat) => cat.id === categoriaId?.toLowerCase()) || categorias[0]
   }
 
   // Função para obter o ícone correto para uma solução
-  const getSolutionIcon = (solution) => {
+  const getSolutionIcon = (solution: Solution) => {
     // Tenta usar o ícone da solução se existir
     if (solution.icon && iconMap[solution.icon]) {
       return iconMap[solution.icon]
@@ -204,8 +214,8 @@ export function SolucoesInteligentes() {
     const maxWidth = tabsListWidth * 0.8 // 80% da largura disponível
 
     let totalWidth = 0
-    const visible = []
-    const hidden = []
+    const visible: Categoria[] = []
+    const hidden: Categoria[] = []
 
     // Adicionar o botão "Todos" primeiro
     const todosCategoria = categorias[0]

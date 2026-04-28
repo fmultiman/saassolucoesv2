@@ -51,20 +51,27 @@ export function handleApiError(error: unknown) {
   }
 
   // Erros do Zod
-  if (error?.name === "ZodError") {
+  const maybeError = error as {
+    name?: string
+    code?: string
+    message?: string
+    format?: () => unknown
+  }
+
+  if (maybeError.name === "ZodError") {
     return {
       error: "Erro de validação",
       code: "VALIDATION_ERROR",
       status: 400,
-      context: error.format?.(),
+      context: maybeError.format?.(),
     }
   }
 
   // Erros do Supabase
-  if (error?.code?.startsWith?.("PGRST")) {
+  if (maybeError.code?.startsWith?.("PGRST")) {
     return {
-      error: error.message || "Erro no banco de dados",
-      code: error.code,
+      error: maybeError.message || "Erro no banco de dados",
+      code: maybeError.code,
       status: 500,
     }
   }

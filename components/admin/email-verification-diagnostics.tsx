@@ -38,7 +38,8 @@ export function EmailVerificationDiagnostics() {
       }
 
       // Obter configurações do Supabase
-      const { data: settings, error: settingsError } = await supabase.auth.getSettings()
+      const { data: settings, error: settingsError } =
+        (await (supabase.auth as any).getSettings?.()) ?? { data: null, error: null }
 
       if (settingsError) {
         throw settingsError

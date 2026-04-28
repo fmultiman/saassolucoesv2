@@ -43,7 +43,7 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
       <CardContent className="pt-6 flex-1">
         <h3 className="text-xl font-bold mb-2 line-clamp-2">{post.titulo || "Sem titulo"}</h3>
         {post.data_publicacao && <p className="text-sm text-muted-foreground mb-2">{formatDate(post.data_publicacao)}</p>}
-        <p className="text-muted-foreground line-clamp-3">{getExcerpt(post.conteudo)}</p>
+        <p className="text-muted-foreground line-clamp-3">{getExcerpt(post.conteudo || undefined)}</p>
       </CardContent>
       <CardFooter>
         <Button asChild variant="outline" className="w-full">

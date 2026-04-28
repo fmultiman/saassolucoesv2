@@ -124,7 +124,7 @@ export function AdminPlansList() {
         description: plan.description || "",
         price: plan.price?.toString() || "",
         billing_cycle: plan.billing_cycle || "mensal",
-        features: plan.features || [],
+        features: Array.isArray(plan.features) ? plan.features.filter((feature): feature is string => typeof feature === "string") : [],
       })
     } else {
       setEditingPlan(null)
@@ -300,7 +300,7 @@ export function AdminPlansList() {
                     <Badge variant="outline">{plan.billing_cycle === "anual" ? "Anual" : "Mensal"}</Badge>
                   </TableCell>
                   <TableCell>
-                    {plan.features && plan.features.length > 0 ? (
+                    {Array.isArray(plan.features) && plan.features.length > 0 ? (
                       <Badge variant="outline">{plan.features.length} recursos</Badge>
                     ) : (
                       <span className="text-muted-foreground">Nenhum</span>

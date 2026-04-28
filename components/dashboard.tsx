@@ -14,6 +14,7 @@ import {
   PieChart,
   ChevronRight,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SolucaoCard } from "@/components/solucao-card"
@@ -37,7 +38,7 @@ interface Solucao {
 }
 
 // Mapeamento de ícones
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Bot: Bot,
   Users: Users,
   Calendar: Calendar,
@@ -102,7 +103,7 @@ export function Dashboard() {
         // Filtrar algumas soluções para recomendações
         // Aqui podemos implementar uma lógica mais sofisticada no futuro
         const recommendedSolutions = activeSolutions
-          .filter((s) => !s.is_active) // Soluções não ativas são recomendadas
+          .filter((s: Solucao) => !s.is_active) // Soluções não ativas são recomendadas
           .slice(0, 2) // Limitar a 2 recomendações
 
         setSolucoes(activeSolutions || [])
@@ -135,7 +136,7 @@ export function Dashboard() {
       cor: solution.color || "bg-blue-500/10 text-blue-500",
       status: solution.is_active ? "ativo" : "inativo",
       bloqueado: solution.is_premium,
-      plano: solution.premium_plan,
+      plano: solution.premium_plan || undefined,
     }
   }
 

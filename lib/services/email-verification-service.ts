@@ -130,8 +130,12 @@ export async function verifyEmailToken(token: string) {
     }
 
     // Verificar se o token expirou
-    if (new Date(data.expires_at) < new Date()) {
+    if (!data.expires_at || new Date(data.expires_at) < new Date()) {
       throw new Error("Token expirado")
+    }
+
+    if (!data.email || !data.user_id) {
+      throw new Error("Token sem usuario ou email vinculado")
     }
 
     // Atualizar o email do usuário

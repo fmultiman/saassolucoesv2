@@ -85,7 +85,7 @@ export function AdminMigrationsManager() {
 
     async function loadFileContent() {
       try {
-        const response = await fetch(`/api/admin/migrations/content?filename=${encodeURIComponent(selectedFile)}`)
+        const response = await fetch(`/api/admin/migrations/content?filename=${encodeURIComponent(selectedFile || "")}`)
         if (!response.ok) throw new Error("Falha ao carregar conteúdo do arquivo")
 
         const data = await response.json()

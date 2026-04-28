@@ -10,11 +10,11 @@ const MIGRATIONS_DIR = path.join(process.cwd(), "migrations")
 export interface MigrationRecord {
   id: string
   filename: string
-  executed_at: string
-  executed_by: string
+  executed_at: string | null
+  executed_by: string | null
   status: "success" | "error"
-  execution_time: number
-  error_message?: string
+  execution_time: number | null
+  error_message?: string | null
 }
 
 export type MigrationFile = {
@@ -39,6 +39,10 @@ export async function listMigrationFiles(): Promise<string[]> {
 // Ler o conteúdo de um arquivo de migração
 export async function readMigrationFile(filename: string): Promise<string> {
   try {
+    if (filename !== path.basename(filename) || !filename.endsWith(".sql")) {
+      throw new Error("Nome de arquivo de migração inválido")
+    }
+
     const filePath = path.join(MIGRATIONS_DIR, filename)
     return await fs.readFile(filePath, "utf-8")
   } catch (error) {
@@ -58,7 +62,10 @@ export async function getExecutedMigrations(): Promise<MigrationRecord[]> {
     return []
   }
 
-  return data || []
+  return (data || []).map((migration) => ({
+    ...migration,
+    status: migration.status === "error" ? "error" : "success",
+  }))
 }
 
 // Executar uma migração
