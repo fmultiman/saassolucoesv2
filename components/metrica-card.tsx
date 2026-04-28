@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp } from "lucide-react"
+import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -9,12 +9,21 @@ interface MetricaCardProps {
     icone: any
     cor: string
     tendencia: string
-    positivo: boolean
+    direcao?: "up" | "down" | "neutral"
   }
 }
 
 export function MetricaCard({ metrica }: MetricaCardProps) {
-  const { titulo, valor, icone: Icone, cor, tendencia, positivo } = metrica
+  const { titulo, valor, icone: Icone, cor, tendencia, direcao = "neutral" } = metrica
+
+  const trendStyles =
+    direcao === "up"
+      ? "text-green-500"
+      : direcao === "down"
+        ? "text-red-500"
+        : "text-muted-foreground"
+
+  const TrendIcon = direcao === "up" ? ArrowUp : direcao === "down" ? ArrowDown : ArrowRight
 
   return (
     <Card>
@@ -27,8 +36,8 @@ export function MetricaCard({ metrica }: MetricaCardProps) {
       <CardContent>
         <div className="text-2xl font-bold">{valor}</div>
         <CardDescription className="flex items-center gap-1 pt-1">
-          {positivo ? <ArrowUp className="h-3 w-3 text-green-500" /> : <ArrowDown className="h-3 w-3 text-red-500" />}
-          <span className={cn(positivo ? "text-green-500" : "text-red-500")}>{tendencia}</span>
+          <TrendIcon className={cn("h-3 w-3", trendStyles)} />
+          <span className={cn(trendStyles)}>{tendencia}</span>
         </CardDescription>
       </CardContent>
     </Card>

@@ -2,19 +2,18 @@
 
 import {
   Bot,
-  Users,
-  ThumbsUp,
+  Layers3,
   Clock,
   MessageSquare,
   ChevronRight,
   Sparkles,
-  Lightbulb,
   ArrowRight,
   Plus,
   Edit,
   CalendarCheck,
   Calendar,
   Mail,
+  ShieldCheck,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -24,6 +23,8 @@ import { MetricaCard } from "@/components/metrica-card"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useCurrentUser } from "@/hooks/use-current-user"
+
+type MetricDirection = "up" | "down" | "neutral"
 
 type SolucaoAtiva = {
   id: string
@@ -44,19 +45,20 @@ type ApiSolution = {
   icon: string | null
   color: string | null
   is_active: boolean | null
+  is_recommended?: boolean | null
 }
 
 export function VisaoGeral() {
   const [solucoesAtivas, setSolucoesAtivas] = useState<SolucaoAtiva[]>([])
+  const [planId, setPlanId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { user, loading: userLoading } = useCurrentUser()
 
   const iconMap: Record<string, LucideIcon> = {
     Bot,
-    Users,
     Calendar,
-    ThumbsUp,
+    Layers3,
     Mail,
     MessageSquare,
     Clock,
@@ -76,6 +78,7 @@ export function VisaoGeral() {
           if (userResponse.ok) {
             const userData = await userResponse.json()
             planId = userData.plan_id
+            setPlanId(userData.plan_id ?? null)
           }
         }
 
@@ -116,81 +119,67 @@ export function VisaoGeral() {
     loadActiveSolutions()
   }, [user?.id, userLoading])
 
-  const metricas = [
+  const categoriasAtivas = new Set(solucoesAtivas.map((solucao) => solucao.categoria)).size
+  const hasSolutions = solucoesAtivas.length > 0
+
+  const metricas: Array<{
+    titulo: string
+    valor: string
+    icone: LucideIcon
+    cor: string
+    tendencia: string
+    direcao: MetricDirection
+  }> = [
     {
       titulo: "Automacoes Ativas",
       valor: solucoesAtivas.length.toString(),
       icone: Bot,
       cor: "bg-blue-500/10 text-blue-500",
-      tendencia: "+1 este mes",
-      positivo: true,
+      tendencia: hasSolutions ? "Disponiveis no seu plano atual" : "Nenhuma ativa no momento",
+      direcao: hasSolutions ? "up" : "neutral",
     },
     {
-      titulo: "Mensagens Enviadas",
-      valor: "1.248",
-      icone: MessageSquare,
+      titulo: "Categorias Ativas",
+      valor: categoriasAtivas.toString(),
+      icone: Layers3,
       cor: "bg-green-500/10 text-green-500",
-      tendencia: "+22% vs. mes anterior",
-      positivo: true,
+      tendencia: categoriasAtivas > 0 ? "Cobertura atual das solucoes carregadas" : "Sem categorias disponiveis",
+      direcao: categoriasAtivas > 0 ? "up" : "neutral",
     },
     {
-      titulo: "Tempo Economizado",
-      valor: "18h",
+      titulo: "Plano Vinculado",
+      valor: planId ? `#${planId}` : "Sem plano",
       icone: Clock,
       cor: "bg-purple-500/10 text-purple-500",
-      tendencia: "~3h por dia",
-      positivo: true,
+      tendencia: planId ? "Usado para filtrar disponibilidade" : "Liberado sem filtro de plano",
+      direcao: "neutral",
     },
     {
-      titulo: "Taxa de Engajamento",
-      valor: "68%",
-      icone: ThumbsUp,
+      titulo: "Acesso do Usuario",
+      valor: user ? "Ativo" : "Sem sessao",
+      icone: ShieldCheck,
       cor: "bg-orange-500/10 text-orange-500",
-      tendencia: "+5% vs. mes anterior",
-      positivo: true,
-    },
-  ]
-
-  const ultimasInteracoes = [
-    {
-      id: 1,
-      cliente: "Maria Silva",
-      mensagem: "Gostaria de saber mais sobre o plano premium",
-      horario: "Hoje, 14:35",
-      avatar: "/placeholder.svg",
-    },
-    {
-      id: 2,
-      cliente: "Joao Oliveira",
-      mensagem: "Preciso remarcar minha consulta para amanha",
-      horario: "Hoje, 11:20",
-      avatar: "/placeholder.svg",
-    },
-    {
-      id: 3,
-      cliente: "Ana Costa",
-      mensagem: "Obrigada pelo excelente atendimento!",
-      horario: "Ontem, 16:45",
-      avatar: "/placeholder.svg",
+      tendencia: user ? "Sessao valida para consultar APIs internas" : "Necessario autenticar novamente",
+      direcao: user ? "up" : "down",
     },
   ]
 
   const sugestoesInteligentes = [
     {
       id: 1,
-      titulo: "Aumente suas vendas",
-      descricao: "Ative a solucao de Email Marketing para aumentar suas conversoes em ate 25%",
+      titulo: "Revisar disponibilidade por plano",
+      descricao: "Valide se as solucoes liberadas para este usuario batem com o plano vinculado na base.",
       icone: Sparkles,
       cor: "bg-yellow-500/10 text-yellow-500",
-      link: "/solucao/email-marketing",
+      link: "/minhas-solucoes",
     },
     {
       id: 2,
-      titulo: "Melhore o atendimento",
-      descricao: "Configure respostas automaticas para as perguntas mais frequentes",
-      icone: Lightbulb,
+      titulo: "Preparar parametros das solucoes",
+      descricao: "O proximo passo natural e ligar configuracoes reais de cada solucao ao comportamento do usuario.",
+      icone: Edit,
       cor: "bg-blue-500/10 text-blue-500",
-      link: "/solucao/chat-rapido",
+      link: "/configuracoes",
     },
   ]
 
@@ -262,40 +251,40 @@ export function VisaoGeral() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Ultimas Interacoes</CardTitle>
-            <CardDescription>Interacoes recentes com seus clientes</CardDescription>
+            <CardTitle>Estado das Interacoes</CardTitle>
+            <CardDescription>Resumo honesto do que ja esta conectado e do que ainda falta modelar</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {ultimasInteracoes.map((interacao) => (
-              <div key={interacao.id} className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-accent/50 overflow-hidden">
-                  <img
-                    src={interacao.avatar || "/placeholder.svg"}
-                    alt={interacao.cliente}
-                    className="h-full w-full object-cover"
-                  />
+            <div className="rounded-lg border p-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-primary/10 p-2 text-primary">
+                  <MessageSquare className="h-5 w-5" />
                 </div>
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{interacao.cliente}</p>
-                    <span className="text-xs text-muted-foreground">{interacao.horario}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{interacao.mensagem}</p>
+                  <p className="font-medium">A camada operacional ainda nao foi conectada</p>
+                  <p className="text-sm text-muted-foreground">
+                    Esta area ja nao mostra mais conversas ficticias. Quando modelarmos eventos, historico ou canais
+                    reais, ela pode voltar a listar interacoes do usuario.
+                  </p>
                 </div>
               </div>
-            ))}
+            </div>
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Hoje a dashboard ja respeita sessao, plano e solucoes ativas. O proximo passo aqui e adicionar uma fonte
+              persistida para mensagens, atendimentos ou execucoes.
+            </div>
           </CardContent>
           <CardFooter>
             <Button variant="ghost" className="w-full" asChild>
-              <Link href="/interacoes">Ver todas as interacoes</Link>
+              <Link href="/interacoes">Abrir central de interacoes</Link>
             </Button>
           </CardFooter>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Sugestoes Inteligentes</CardTitle>
-            <CardDescription>Recomendacoes baseadas no seu perfil</CardDescription>
+            <CardTitle>Proximos Passos</CardTitle>
+            <CardDescription>Sugestoes praticas para continuar conectando a operacao real do produto</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {sugestoesInteligentes.map((sugestao) => (
