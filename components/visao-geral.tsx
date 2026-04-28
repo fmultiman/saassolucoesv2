@@ -43,32 +43,33 @@ type ApiSolution = {
   category: string | null
   icon: string | null
   color: string | null
-  is_active: boolean
+  is_active: boolean | null
 }
 
 export function VisaoGeral() {
   const [solucoesAtivas, setSolucoesAtivas] = useState<SolucaoAtiva[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useCurrentUser()
+  const [error, setError] = useState<string | null>(null)
+  const { user, loading: userLoading } = useCurrentUser()
 
-  // Mapeamento de ícones
   const iconMap: Record<string, LucideIcon> = {
-    Bot: Bot,
-    Users: Users,
-    Calendar: Calendar,
-    ThumbsUp: ThumbsUp,
-    Mail: Mail,
-    MessageSquare: MessageSquare,
-    Clock: Clock,
-    // Adicione outros ícones conforme necessário
+    Bot,
+    Users,
+    Calendar,
+    ThumbsUp,
+    Mail,
+    MessageSquare,
+    Clock,
   }
 
   useEffect(() => {
     async function loadActiveSolutions() {
+      if (userLoading) return
+
       try {
         setLoading(true)
+        setError(null)
 
-        // Buscar o plano do usuário atual
         let planId = null
         if (user?.id) {
           const userResponse = await fetch(`/api/users/${user.id}`)
@@ -78,25 +79,22 @@ export function VisaoGeral() {
           }
         }
 
-        // Buscar soluções ativas para o plano do usuário
         const url = planId ? `/api/solutions/active?planId=${planId}&limit=3` : "/api/solutions/active?limit=3"
-
         const response = await fetch(url)
+
         if (!response.ok) {
-          throw new Error(`Erro ao buscar soluções: ${response.status}`)
+          throw new Error(`Erro ao buscar solucoes: ${response.status}`)
         }
 
-        const data = await response.json()
-
-        // Converter para o formato esperado pelo componente
-        const formattedSolutions = data.map((solution: ApiSolution) => {
+        const data = (await response.json()) as ApiSolution[]
+        const formattedSolutions = data.map((solution) => {
           const iconName = solution.icon || "Bot"
           const IconComponent = iconMap[iconName] || Bot
 
           return {
             id: solution.id.toString(),
             nome: solution.name,
-            descricao: solution.description || "Sem descrição",
+            descricao: solution.description || "Sem descricao",
             categoria: solution.category || "geral",
             icone: IconComponent,
             cor: solution.color || "bg-blue-500/10 text-blue-500",
@@ -106,47 +104,25 @@ export function VisaoGeral() {
         })
 
         setSolucoesAtivas(formattedSolutions)
-      } catch (error) {
-        console.error("Erro ao carregar soluções:", error)
-        // Fallback para soluções estáticas em caso de erro
-        setSolucoesAtivas([
-          {
-            id: "autoatendimento-ia",
-            nome: "Autoatendimento com IA",
-            descricao: "Cliente interage com um fluxo que entende a intenção e responde sozinho.",
-            categoria: "atendimento",
-            icone: Bot,
-            cor: "bg-blue-500/10 text-blue-500",
-            status: "ativo",
-            bloqueado: false,
-          },
-          {
-            id: "recuperar-cliente",
-            nome: "Recuperar Cliente Inativo",
-            descricao: "Reativa contatos que pararam de responder com mensagem personalizada.",
-            categoria: "vendas",
-            icone: Users,
-            cor: "bg-green-500/10 text-green-500",
-            status: "ativo",
-            bloqueado: false,
-          },
-        ])
+      } catch (loadError) {
+        console.error("Erro ao carregar solucoes:", loadError)
+        setError("Nao foi possivel carregar as solucoes no momento.")
+        setSolucoesAtivas([])
       } finally {
         setLoading(false)
       }
     }
 
     loadActiveSolutions()
-  }, [user])
+  }, [user?.id, userLoading])
 
-  // Métricas de uso
   const metricas = [
     {
-      titulo: "Automações Ativas",
-      valor: "2",
+      titulo: "Automacoes Ativas",
+      valor: solucoesAtivas.length.toString(),
       icone: Bot,
       cor: "bg-blue-500/10 text-blue-500",
-      tendencia: "+1 este mês",
+      tendencia: "+1 este mes",
       positivo: true,
     },
     {
@@ -154,7 +130,7 @@ export function VisaoGeral() {
       valor: "1.248",
       icone: MessageSquare,
       cor: "bg-green-500/10 text-green-500",
-      tendencia: "+22% vs. mês anterior",
+      tendencia: "+22% vs. mes anterior",
       positivo: true,
     },
     {
@@ -170,12 +146,11 @@ export function VisaoGeral() {
       valor: "68%",
       icone: ThumbsUp,
       cor: "bg-orange-500/10 text-orange-500",
-      tendencia: "+5% vs. mês anterior",
+      tendencia: "+5% vs. mes anterior",
       positivo: true,
     },
   ]
 
-  // Últimas interações
   const ultimasInteracoes = [
     {
       id: 1,
@@ -186,8 +161,8 @@ export function VisaoGeral() {
     },
     {
       id: 2,
-      cliente: "João Oliveira",
-      mensagem: "Preciso remarcar minha consulta para amanhã",
+      cliente: "Joao Oliveira",
+      mensagem: "Preciso remarcar minha consulta para amanha",
       horario: "Hoje, 11:20",
       avatar: "/placeholder.svg",
     },
@@ -200,12 +175,11 @@ export function VisaoGeral() {
     },
   ]
 
-  // Sugestões inteligentes
   const sugestoesInteligentes = [
     {
       id: 1,
       titulo: "Aumente suas vendas",
-      descricao: "Ative a solução de Email Marketing para aumentar suas conversões em até 25%",
+      descricao: "Ative a solucao de Email Marketing para aumentar suas conversoes em ate 25%",
       icone: Sparkles,
       cor: "bg-yellow-500/10 text-yellow-500",
       link: "/solucao/email-marketing",
@@ -213,35 +187,34 @@ export function VisaoGeral() {
     {
       id: 2,
       titulo: "Melhore o atendimento",
-      descricao: "Configure respostas automáticas para as perguntas mais frequentes",
+      descricao: "Configure respostas automaticas para as perguntas mais frequentes",
       icone: Lightbulb,
       cor: "bg-blue-500/10 text-blue-500",
       link: "/solucao/chat-rapido",
     },
   ]
 
-  // Atalhos rápidos atualizados
   const atalhosRapidos = [
     {
       id: 1,
-      titulo: "Ativar nova solução",
-      descricao: "Explore o catálogo de soluções",
+      titulo: "Ativar nova solucao",
+      descricao: "Explore o catalogo de solucoes",
       icone: Plus,
       cor: "bg-purple-500/10 text-purple-500",
       href: "/solucoes",
     },
     {
       id: 2,
-      titulo: "Editar minhas soluções",
-      descricao: "Configure soluções ativas",
+      titulo: "Editar minhas solucoes",
+      descricao: "Configure solucoes ativas",
       icone: Edit,
       cor: "bg-green-500/10 text-green-500",
       href: "/minhas-solucoes",
     },
     {
       id: 3,
-      titulo: "Ver próximos envios",
-      descricao: "Automações programadas",
+      titulo: "Ver proximos envios",
+      descricao: "Automacoes programadas",
       icone: CalendarCheck,
       cor: "bg-blue-500/10 text-blue-500",
       href: "/proximos-envios",
@@ -251,14 +224,13 @@ export function VisaoGeral() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Olá, bem-vindo(a) de volta!</h1>
-        <p className="text-muted-foreground">Confira o resumo das suas atividades e soluções.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Ola, bem-vindo(a) de volta!</h1>
+        <p className="text-muted-foreground">Confira o resumo das suas atividades e solucoes.</p>
       </div>
 
-      {/* Soluções Ativas */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Soluções Ativas</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Solucoes Ativas</h2>
           <Button variant="link" className="text-primary" asChild>
             <Link href="/solucoes">
               Ver todas <ChevronRight className="ml-1 h-4 w-4" />
@@ -266,21 +238,32 @@ export function VisaoGeral() {
           </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {solucoesAtivas.map((solucao) => (
-            <Link href={`/solucao/${solucao.id}`} key={solucao.id} className="block h-full">
-              <SolucaoCard solucao={solucao} />
-            </Link>
-          ))}
+          {loading &&
+            [1, 2, 3].map((item) => <div key={item} className="h-[200px] rounded-lg bg-muted animate-pulse" />)}
+          {!loading &&
+            solucoesAtivas.map((solucao) => (
+              <Link href={`/solucao/${solucao.id}`} key={solucao.id} className="block h-full">
+                <SolucaoCard solucao={solucao} />
+              </Link>
+            ))}
+          {!loading && !error && solucoesAtivas.length === 0 && (
+            <div className="col-span-full rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+              Nenhuma solucao ativa encontrada para o seu plano atual.
+            </div>
+          )}
+          {!loading && error && (
+            <div className="col-span-full rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center text-sm text-destructive">
+              {error}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Últimas Interações e Sugestões Inteligentes em duas colunas */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Últimas Interações */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Últimas Interações</CardTitle>
-            <CardDescription>Interações recentes com seus clientes</CardDescription>
+            <CardTitle>Ultimas Interacoes</CardTitle>
+            <CardDescription>Interacoes recentes com seus clientes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {ultimasInteracoes.map((interacao) => (
@@ -304,16 +287,15 @@ export function VisaoGeral() {
           </CardContent>
           <CardFooter>
             <Button variant="ghost" className="w-full" asChild>
-              <Link href="/interacoes">Ver todas as interações</Link>
+              <Link href="/interacoes">Ver todas as interacoes</Link>
             </Button>
           </CardFooter>
         </Card>
 
-        {/* Sugestões Inteligentes */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Sugestões Inteligentes</CardTitle>
-            <CardDescription>Recomendações baseadas no seu perfil</CardDescription>
+            <CardTitle>Sugestoes Inteligentes</CardTitle>
+            <CardDescription>Recomendacoes baseadas no seu perfil</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {sugestoesInteligentes.map((sugestao) => (
@@ -335,15 +317,14 @@ export function VisaoGeral() {
           </CardContent>
           <CardFooter>
             <Button variant="ghost" className="w-full">
-              Ver mais sugestões
+              Ver mais sugestoes
             </Button>
           </CardFooter>
         </Card>
       </div>
 
-      {/* Métricas de Uso */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Métricas de Uso</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Metricas de Uso</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {metricas.map((metrica, index) => (
             <MetricaCard key={index} metrica={metrica} />
@@ -351,9 +332,8 @@ export function VisaoGeral() {
         </div>
       </div>
 
-      {/* Atalhos Rápidos */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Atalhos Rápidos</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Atalhos Rapidos</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {atalhosRapidos.map((atalho) => (
             <Link href={atalho.href} key={atalho.id}>
