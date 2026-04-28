@@ -1,6 +1,7 @@
 // Configuração centralizada para autenticação com Supabase
 import { createClient } from "@supabase/supabase-js"
 import { getAuthRedirectUrls } from "./auth-helpers"
+import { getSupabasePublishableKey, getSupabaseUrl } from "./env"
 
 // Obter URLs de redirecionamento
 const { emailRedirectTo } = getAuthRedirectUrls()
@@ -26,8 +27,8 @@ export const SUPABASE_AUTH_CONFIG = {
 // Função para criar um cliente Supabase com configurações padrão
 export function createAuthClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+    getSupabaseUrl() || "",
+    getSupabasePublishableKey() || "",
     {
       auth: {
         autoRefreshToken: true,

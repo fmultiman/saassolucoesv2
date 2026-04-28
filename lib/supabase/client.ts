@@ -1,25 +1,15 @@
 import { createBrowserClient } from "@supabase/ssr"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "./types"
+import { getSupabasePublicConfig } from "./env"
 
 let supabaseInstance: SupabaseClient<Database> | null = null
 
-function getSupabaseConfig() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.")
-  }
-
-  return { supabaseUrl, supabaseAnonKey }
-}
-
 export const createClient = (): SupabaseClient<Database> => {
-  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig()
+  const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
 
   if (typeof window === "undefined") {
-    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    return createBrowserClient<Database>(supabaseUrl, supabaseKey, {
       auth: {
         flowType: "pkce",
         detectSessionInUrl: true,
@@ -30,7 +20,7 @@ export const createClient = (): SupabaseClient<Database> => {
   }
 
   if (!supabaseInstance) {
-    supabaseInstance = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    supabaseInstance = createBrowserClient<Database>(supabaseUrl, supabaseKey, {
       cookies: {
         get(name) {
           return document.cookie

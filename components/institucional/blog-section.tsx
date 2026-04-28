@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { supabase } from "@/lib/supabase/client"
+import { getSupabasePublishableKey } from "@/lib/supabase/env"
 
 export function BlogSection() {
   const [posts, setPosts] = useState<Post[]>([])
@@ -21,10 +22,10 @@ export function BlogSection() {
       try {
         console.log("Iniciando busca de posts recentes...")
         console.log("URL do Supabase:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-        console.log("Chave Anônima definida:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+        console.log("Chave Supabase pública definida:", !!getSupabasePublishableKey())
 
         // Verificar se as variáveis de ambiente estão definidas
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !getSupabasePublishableKey()) {
           console.error("Variáveis de ambiente do Supabase não definidas")
           setError("Configuração incompleta. Entre em contato com o suporte.")
           setIsLoading(false)

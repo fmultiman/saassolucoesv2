@@ -1,6 +1,7 @@
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
 import type { RequestCookies, ResponseCookies } from "next/dist/compiled/@edge-runtime/cookies"
 import type { Database } from "./types"
+import { getSupabasePublicConfig } from "./env"
 
 /**
  * Cria um cliente Supabase para uso em componentes do servidor
@@ -8,9 +9,11 @@ import type { Database } from "./types"
  * @returns Cliente Supabase configurado para o servidor
  */
 export function createServerClient(cookies: RequestCookies | ResponseCookies) {
+  const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
+
   return createSupabaseServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {

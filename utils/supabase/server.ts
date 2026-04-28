@@ -1,6 +1,7 @@
 import { createClient as createSupabaseServerClient } from "@supabase/supabase-js"
 import type { cookies } from "next/headers"
 import type { Database } from "./types"
+import { getSupabasePublicConfig } from "@/lib/supabase/env"
 
 /**
  * Creates a Supabase client for use in server components.
@@ -9,9 +10,11 @@ import type { Database } from "./types"
  * @returns A Supabase client configured for server-side usage.
  */
 export function createClient(cookieStore: ReturnType<typeof cookies>) {
+  const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
+
   return createSupabaseServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {

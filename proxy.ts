@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { getSupabasePublicConfig } from "@/lib/supabase/env"
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -57,10 +58,12 @@ export async function proxy(request: NextRequest) {
   const res = NextResponse.next()
 
   try {
+    const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
+
     // Criar cliente Supabase para o middleware
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseKey,
       {
         cookies: {
           get(name) {
