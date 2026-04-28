@@ -11,8 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
-import { createClient } from "@/lib/supabase/client" // ✅ NOVO
-const supabase = createClient() // ✅ NOVO
+import { createClient } from "@/lib/supabase/client"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -40,6 +39,7 @@ export default function ResetPasswordPage() {
         // Verificar se o token é válido
         // Apenas verificamos se conseguimos obter a sessão
         // O Supabase não tem um método específico para validar o token
+        const supabase = createClient()
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {
@@ -77,6 +77,7 @@ export default function ResetPasswordPage() {
       }
 
       // Atualizar a senha
+      const supabase = createClient()
       const { error } = await supabase.auth.updateUser({
         password: password,
       })
