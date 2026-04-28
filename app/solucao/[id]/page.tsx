@@ -90,17 +90,29 @@ type UpgradePlan = {
   name: string
 }
 
+type ApiSolution = {
+  id: number | string
+  slug?: string | null
+  name: string
+  description: string | null
+  category: string | null
+  is_active: boolean | null
+  activations: number | null
+}
+
 export default function SolucaoDetalhesPage() {
   const params = useParams()
   const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [solucao, setSolucao] = useState<SolucaoDetalhes | null>(null)
   const [isActive, setIsActive] = useState(false)
-  const { user } = useCurrentUser()
+  const { user, loading: userLoading } = useCurrentUser()
   const [available, setAvailable] = useState(false)
+  const [checkingAvailability, setCheckingAvailability] = useState(true)
   const [reason, setReason] = useState("")
   const [upgradePlan, setUpgradePlan] = useState<UpgradePlan | null>(null)
   const solutionId = Array.isArray(params.id) ? params.id[0] : params.id
+  const isNumericSolutionId = !!solutionId && /^\d+$/.test(solutionId)
 
   // Verificar se o usuário tem acesso à solução
   const checkAvailability = useCallback(async (solutionId: string, userId: string) => {
@@ -125,17 +137,33 @@ export default function SolucaoDetalhesPage() {
   }, [])
 
   useEffect(() => {
-    if (solutionId && user?.id) {
-      checkAvailability(solutionId, user.id).then((data) => {
+    if (!solutionId || userLoading) return
+
+    if (!user?.id) {
+      setAvailable(false)
+      setReason("Usuário não autenticado")
+      setCheckingAvailability(false)
+      return
+    }
+
+    if (!isNumericSolutionId) {
+      setAvailable(true)
+      setCheckingAvailability(false)
+      return
+    }
+
+    setCheckingAvailability(true)
+    checkAvailability(solutionId, user.id)
+      .then((data) => {
         setAvailable(data.available)
         setReason(data.reason)
         setUpgradePlan(data.upgradePlan)
       })
-    }
-  }, [solutionId, user?.id, checkAvailability])
+      .finally(() => setCheckingAvailability(false))
+  }, [solutionId, isNumericSolutionId, user?.id, userLoading, checkAvailability])
 
   // Se a solução não estiver disponível, mostre uma mensagem
-  if (!available) {
+  if (!checkingAvailability && !available) {
     return (
       <div className="container max-w-4xl py-10">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
@@ -410,6 +438,9 @@ export default function SolucaoDetalhesPage() {
 
   useEffect(() => {
     // Simular busca da solução pelo ID
+    let ignore = false
+
+    async function loadSolution() {
     const id = solutionId
     if (!id) return
 
@@ -417,16 +448,53 @@ export default function SolucaoDetalhesPage() {
     const categoriasPorId = categoriasSolucoes as Record<string, string>
     const descricoesPorId = descricoesSolucoes as Record<string, string>
 
+    if (isNumericSolutionId) {
+      try {
+        const response = await fetch(`/api/solutions/${id}`, { cache: "no-store" })
+        if (response.ok) {
+          const data = (await response.json()) as ApiSolution
+          const solucaoEncontrada: SolucaoDetalhes = {
+            id: String(data.id),
+            nome: data.name,
+            descricao: data.description || "Descrição da solução",
+            categoria: data.category || "atendimento",
+            status: data.is_active ? "ativo" : "inativo",
+            ativacoes: data.activations || 0,
+            estatisticas: {
+              interacoes: data.activations || 0,
+              tempoEconomizado: "0h",
+              taxaResolucao: "0%",
+            },
+            configuracoes: {
+              mensagemPadrao: "Configure esta solução para personalizar a experiência do cliente.",
+              horasFuncionamento: "Horário comercial",
+              notificacoes: true,
+            },
+          }
+
+          if (!ignore) {
+            setSolucao(solucaoEncontrada)
+            setIsActive(solucaoEncontrada.status === "ativo")
+          }
+          return
+        }
+      } catch (error) {
+        console.error("Erro ao carregar solução da API:", error)
+      }
+    }
+
     if (id in solucoesPorId) {
       const solucaoEncontrada = solucoesPorId[id]
-      setSolucao(solucaoEncontrada)
-      setIsActive(solucaoEncontrada.status === "ativo")
+      if (!ignore) {
+        setSolucao(solucaoEncontrada)
+        setIsActive(solucaoEncontrada.status === "ativo")
+      }
     } else {
       // Solução genérica para IDs não encontrados nos dados fictícios
       const categoria = categoriasPorId[id] || "atendimento"
       const descricao = descricoesPorId[id] || "Descrição da solução"
 
-      setSolucao({
+      const solucaoGenerica: SolucaoDetalhes = {
         id,
         nome: id
           .split("-")
@@ -446,9 +514,21 @@ export default function SolucaoDetalhesPage() {
           horasFuncionamento: "Horário comercial",
           notificacoes: true,
         },
-      })
+      }
+
+      if (!ignore) {
+        setSolucao(solucaoGenerica)
+        setIsActive(solucaoGenerica.status === "ativo")
+      }
     }
-  }, [solutionId])
+    }
+
+    loadSolution()
+
+    return () => {
+      ignore = true
+    }
+  }, [solutionId, isNumericSolutionId])
 
   if (!solucao) {
     return (
