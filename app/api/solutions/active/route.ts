@@ -7,15 +7,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const planId = searchParams.get("planId")
     const planIdNumber = planId ? Number.parseInt(planId, 10) : null
-    const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
+    const limitParam = searchParams.get("limit")
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : undefined
 
     if (planId && Number.isNaN(planIdNumber)) {
       return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
     }
 
+    if (limitParam && (!limit || Number.isNaN(limit) || limit < 1)) {
+      return NextResponse.json({ error: "Limite invalido" }, { status: 400 })
+    }
+
     const supabase = createServiceRoleClient()
 
-    let query = supabase.from("solutions").select("*")
+    let query = supabase.from("solutions").select("*").eq("is_active", true).order("name")
 
     // Se tiver planId, buscar apenas soluções disponíveis para o plano
     if (planId) {
