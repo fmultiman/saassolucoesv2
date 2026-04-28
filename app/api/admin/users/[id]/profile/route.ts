@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireAdminApiUser } from "@/lib/api-auth"
+import { resolvePlanFromDatabase } from "@/lib/plan-utils"
 
 // Schema de validação para atualização de perfil
 const profileUpdateSchema = z.object({
@@ -17,7 +18,7 @@ const profileUpdateSchema = z.object({
   avatar_url: z.string().url().nullable().optional(),
   preferences: z.record(z.any()).nullable().optional(),
   status: z.enum(["active", "inactive", "suspended"]).optional(),
-  plan: z.enum(["free", "basic", "pro", "enterprise"]).optional(),
+  plan: z.string().optional(),
 })
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -66,13 +67,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Usar o cliente com role de serviço para atualizar qualquer usuário
     const supabaseAdmin = createServiceRoleClient()
     const { status, plan, name, ...profileData } = validData
+    const resolvedPlan = plan ? await resolvePlanFromDatabase(plan) : null
 
     // Atualizar perfil no banco de dados
     const { error } = await supabaseAdmin
       .from("users")
       .update({
         ...(status ? { status } : {}),
-        ...(plan ? { plan } : {}),
+        ...(resolvedPlan ? { plan: resolvedPlan.code, plan_id: resolvedPlan.id } : {}),
         ...(name ? { name } : {}),
         updated_at: new Date().toISOString(),
       })

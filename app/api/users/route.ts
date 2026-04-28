@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { getCurrentApiUser } from "@/lib/api-auth"
+import { resolvePlanFromDatabase } from "@/lib/plan-utils"
 
 export async function POST(request: Request) {
   try {
@@ -23,8 +24,8 @@ export async function POST(request: Request) {
     }
 
     const userType = isAdminRequest && tipoAcesso === "admin" ? "admin" : "client"
-    const validPlans = ["free", "basic", "pro", "enterprise"]
-    const userPlan = validPlans.includes(plano) ? plano : "free"
+    const resolvedPlan = await resolvePlanFromDatabase(plano)
+    const userPlan = userType === "client" ? resolvedPlan.code : DEFAULT_ADMIN_PLAN
 
     // 🔍 Verificar se já existe na tabela users
     const { data: userInTable, error: tableError } = await supabaseAdmin
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
           name: nome,
           tipo: userType,
           plano: userType === "client" ? userPlan : null,
+          plan_id: userType === "client" ? resolvedPlan.id : null,
         },
       })
 
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
           email: normalizedEmail,
           user_type: userType,
           plan: userPlan,
+          plan_id: userType === "client" ? resolvedPlan.id : null,
           status: "active",
         })
         .eq("id", userId)
@@ -112,6 +115,7 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         user_type: userType,
         plan: userPlan,
+        plan_id: userType === "client" ? resolvedPlan.id : null,
         status: "active",
       })
 
@@ -130,6 +134,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message || "Erro inesperado" }, { status: 500 })
   }
 }
+
+const DEFAULT_ADMIN_PLAN = "free"
 
 function generateTemporaryPassword(length = 12) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%*"

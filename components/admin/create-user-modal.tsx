@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,6 +20,12 @@ import { useToast } from "@/components/ui/use-toast"
 import { AlertCircle, Loader2, UserPlus } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
+
+interface PlanOption {
+  id: number
+  name: string
+  code: string | null
+}
 
 interface UserFormData {
   nome: string
@@ -39,15 +45,42 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emailExists, setEmailExists] = useState(false)
+  const [plans, setPlans] = useState<PlanOption[]>([])
   const [formData, setFormData] = useState<UserFormData>({
     nome: "",
     email: "",
     tipoAcesso: "client",
-    plano: "free",
+    plano: "gratuito",
     forceCreate: false,
   })
 
   const { toast } = useToast()
+
+  const loadPlans = async () => {
+    try {
+      const response = await fetch("/api/plans")
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar planos: ${response.status}`)
+      }
+
+      const data = (await response.json()) as PlanOption[]
+      setPlans(data)
+
+      if (data.length > 0) {
+        const gratuito = data.find((plan) => plan.code === "gratuito") || data[0]
+        setFormData((prev) => ({
+          ...prev,
+          plano: prev.plano || gratuito.code || "gratuito",
+        }))
+      }
+    } catch (loadError) {
+      console.error("Erro ao carregar planos:", loadError)
+    }
+  }
+
+  useEffect(() => {
+    void loadPlans()
+  }, [])
 
   const handleChange = (field: keyof UserFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -120,7 +153,7 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
         nome: "",
         email: "",
         tipoAcesso: "client",
-        plano: "free",
+        plano: plans.find((plan) => plan.code === "gratuito")?.code || plans[0]?.code || "gratuito",
         forceCreate: false,
       })
 
@@ -226,10 +259,11 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
                     <SelectValue placeholder="Plano" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="free">Gratuito</SelectItem>
-                    <SelectItem value="basic">Starter</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="enterprise">Premium</SelectItem>
+                    {plans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.code || plan.name.toLowerCase()}>
+                        {plan.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
