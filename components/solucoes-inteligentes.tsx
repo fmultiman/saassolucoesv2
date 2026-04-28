@@ -57,9 +57,10 @@ type Solution = {
   category: string | null
   icon?: string | null
   activations?: number | null
-  is_active: boolean
+  is_active: boolean | null
+  is_recommended?: boolean | null
   custom_price?: number | null
-  custom_limits?: Record<string, any> | null
+  custom_limits?: unknown
 }
 
 type Categoria = {
@@ -78,7 +79,7 @@ export function SolucoesInteligentes() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const tabsListRef = useRef<HTMLDivElement | null>(null)
-  const { user } = useCurrentUser()
+  const { user, loading: userLoading } = useCurrentUser()
 
   const categorias: Categoria[] = [
     { id: "todos", label: "Todos" },
@@ -129,8 +130,11 @@ export function SolucoesInteligentes() {
   // Carregar soluções do banco de dados
   useEffect(() => {
     const fetchSolutions = async () => {
+      if (userLoading) return
+
       try {
         setLoading(true)
+        setError(null)
 
         // Primeiro, buscar o plano do usuário atual
         let planId = null
@@ -167,11 +171,11 @@ export function SolucoesInteligentes() {
     }
 
     fetchSolutions()
-  }, [user])
+  }, [user?.id, userLoading])
 
   // Recomendações personalizadas - poderia ser baseado em alguma lógica do backend no futuro
   const recomendados = solutions
-    .filter((solution) => solution.is_active)
+    .filter((solution) => solution.is_recommended)
     .slice(0, 3)
     .map((solution) => ({
       ...solution,
