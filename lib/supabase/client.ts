@@ -4,66 +4,71 @@ import type { Database } from "./types"
 
 let supabaseInstance: SupabaseClient<Database> | null = null
 
-export const createClient = (): SupabaseClient<Database> => {
-  if (typeof window === "undefined") {
-    // No servidor sempre cria uma nova instância
-    return createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          flowType: "pkce",
-          detectSessionInUrl: true,
-          persistSession: true,
-          autoRefreshToken: true,
-        },
-      }
-    )
+function getSupabaseConfig() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.")
   }
 
-  // No cliente, usa singleton
+  return { supabaseUrl, supabaseAnonKey }
+}
+
+export const createClient = (): SupabaseClient<Database> => {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig()
+
+  if (typeof window === "undefined") {
+    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: "pkce",
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  }
+
   if (!supabaseInstance) {
-    supabaseInstance = createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name) {
-            return document.cookie
-              .split("; ")
-              .find((c) => c.startsWith(`${name}=`))
-              ?.split("=")[1]
-          },
-          set(name, value, options) {
-            let cookie = `${name}=${value}`
-            if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`
-            if (options.path) cookie += `; Path=${options.path}`
-            if (options.sameSite) cookie += `; SameSite=${options.sameSite}`
-            if (options.domain) cookie += `; Domain=${options.domain}`
-            if (options.secure) cookie += `; Secure`
-            document.cookie = cookie
-          },
-          remove(name, options) {
-            this.set(name, "", { ...options, maxAge: -1 })
-          },
+    supabaseInstance = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        get(name) {
+          return document.cookie
+            .split("; ")
+            .find((cookie) => cookie.startsWith(`${name}=`))
+            ?.split("=")[1]
         },
-        auth: {
-          flowType: "pkce",
-          detectSessionInUrl: true,
-          persistSession: true,
-          autoRefreshToken: true,
+        set(name, value, options) {
+          let cookie = `${name}=${value}`
+          if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`
+          if (options.path) cookie += `; Path=${options.path}`
+          if (options.sameSite) cookie += `; SameSite=${options.sameSite}`
+          if (options.domain) cookie += `; Domain=${options.domain}`
+          if (options.secure) cookie += "; Secure"
+          document.cookie = cookie
         },
-      }
-    )
+        remove(name, options) {
+          this.set(name, "", { ...options, maxAge: -1 })
+        },
+      },
+      auth: {
+        flowType: "pkce",
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
   }
 
   return supabaseInstance
 }
 
-// Exporta diretamente como 'supabase' para manter compatibilidade com suas páginas
-export const supabase = createClient()
+export const supabase = new Proxy({} as SupabaseClient<Database>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(createClient(), prop, receiver)
+  },
+})
 
-// Função para limpar o singleton — útil em logout
 export const clearSupabaseClient = () => {
   supabaseInstance = null
 }
