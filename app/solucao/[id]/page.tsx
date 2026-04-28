@@ -48,8 +48,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { viewport } from "@/lib/viewport"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
 
 export { viewport }
 
@@ -59,7 +59,7 @@ export default function SolucaoDetalhesPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [solucao, setSolucao] = useState(null)
   const [isActive, setIsActive] = useState(false)
-  const { data: session } = useSession()
+  const { user } = useCurrentUser()
   const [available, setAvailable] = useState(false)
   const [reason, setReason] = useState("")
   const [upgradePlan, setUpgradePlan] = useState(null)
@@ -87,14 +87,14 @@ export default function SolucaoDetalhesPage() {
   }, [])
 
   useEffect(() => {
-    if (params.id && session?.user?.id) {
-      checkAvailability(params.id, session.user.id).then((data) => {
+    if (params.id && user?.id) {
+      checkAvailability(String(params.id), user.id).then((data) => {
         setAvailable(data.available)
         setReason(data.reason)
         setUpgradePlan(data.upgradePlan)
       })
     }
-  }, [params.id, session?.user?.id, checkAvailability])
+  }, [params.id, user?.id, checkAvailability])
 
   // Se a solução não estiver disponível, mostre uma mensagem
   if (!available) {
