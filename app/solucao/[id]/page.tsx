@@ -115,14 +115,11 @@ export default function SolucaoDetalhesPage() {
   const isNumericSolutionId = !!solutionId && /^\d+$/.test(solutionId)
 
   // Verificar se o usuário tem acesso à solução
-  const checkAvailability = useCallback(async (solutionId: string, userId: string) => {
+  const checkAvailability = useCallback(async (solutionId: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/api/solutions/${solutionId}/availability?userId=${userId}`,
-        {
-          cache: "no-store",
-        },
-      )
+      const response = await fetch(`/api/solutions/${solutionId}/availability`, {
+        cache: "no-store",
+      })
 
       if (!response.ok) {
         return { available: false, reason: "Erro ao verificar disponibilidade" }
@@ -153,7 +150,7 @@ export default function SolucaoDetalhesPage() {
     }
 
     setCheckingAvailability(true)
-    checkAvailability(solutionId, user.id)
+    checkAvailability(solutionId)
       .then((data) => {
         setAvailable(data.available)
         setReason(data.reason)
