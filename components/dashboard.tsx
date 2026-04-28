@@ -22,18 +22,20 @@ import { MetricaCard } from "@/components/metrica-card"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 // Tipo para as soluções
 interface Solucao {
-  id: string
-  slug: string
+  id: string | number
+  slug: string | null
   name: string
-  description: string
-  category: string
-  icon: string
-  color: string
-  is_active: boolean
-  is_premium: boolean
+  description: string | null
+  category: string | null
+  icon: string | null
+  color: string | null
+  is_active: boolean | null
+  is_recommended: boolean | null
+  is_premium: boolean | null
   premium_plan: string | null
 }
 
@@ -58,7 +60,7 @@ export function Dashboard() {
   const [recomendados, setRecomendados] = useState<Solucao[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
-  const [user, setUser] = useState<{ id: string } | null>(null) // Adicione o estado do usuário
+  const { user, loading: userLoading } = useCurrentUser()
 
   const categorias = [
     { id: "todos", label: "Todos" },
@@ -71,6 +73,8 @@ export function Dashboard() {
   // Carregar soluções da API
   useEffect(() => {
     async function loadSolutions() {
+      if (userLoading) return
+
       try {
         setLoading(true)
 
@@ -102,8 +106,8 @@ export function Dashboard() {
 
         // Filtrar algumas soluções para recomendações
         // Aqui podemos implementar uma lógica mais sofisticada no futuro
-        const recommendedSolutions = activeSolutions
-          .filter((s: Solucao) => !s.is_active) // Soluções não ativas são recomendadas
+        const recommendedSolutions = (activeSolutions as Solucao[])
+          .filter((s) => s.is_recommended)
           .slice(0, 2) // Limitar a 2 recomendações
 
         setSolucoes(activeSolutions || [])
@@ -121,11 +125,11 @@ export function Dashboard() {
     }
 
     loadSolutions()
-  }, [toast, user])
+  }, [toast, user?.id, userLoading])
 
   // Converter solução do banco para o formato esperado pelo componente
   const convertSolution = (solution: Solucao) => {
-    const IconComponent = iconMap[solution.icon] || Bot // Fallback para Bot se o ícone não for encontrado
+    const IconComponent = solution.icon ? iconMap[solution.icon] || Bot : Bot
 
     return {
       id: solution.id.toString(),
@@ -135,7 +139,7 @@ export function Dashboard() {
       icone: IconComponent,
       cor: solution.color || "bg-blue-500/10 text-blue-500",
       status: solution.is_active ? "ativo" : "inativo",
-      bloqueado: solution.is_premium,
+      bloqueado: !!solution.is_premium,
       plano: solution.premium_plan || undefined,
     }
   }
