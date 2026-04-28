@@ -105,15 +105,13 @@ export function ProfileForm({ profile, onUpdateProfile, isAdmin = false, userEma
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
 
-  console.log("ProfileForm - profile recebido:", profile)
-
   // Valores padrão do formulário
   const defaultValues: Partial<ProfileFormValues> = {
     name: profile?.name ?? "",
     bio: profile?.bio ?? "",
     phone: profile?.phone ?? "",
     job_title: profile?.job_title ?? "",
-    company_name: profile?.company_name ?? "",
+    company_name: profile?.company_name ?? profile?.company ?? "",
     company_size: profile?.company_size ?? "",
     industry: profile?.industry ?? "",
     website: profile?.website ?? "",
