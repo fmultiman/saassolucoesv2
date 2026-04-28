@@ -7,6 +7,7 @@ const publicRoutes = [
   "/signup",
   "/blog",
   "/marketplace",
+  "/expansao",
   "/recursos-adicionais",
   "/auth/verify",
   "/auth/reset-password",
@@ -35,7 +36,6 @@ function getRedirectPath(pathname: string, userType?: string | null) {
     pathname.startsWith("/interacoes") ||
     pathname.startsWith("/proximos-envios") ||
     pathname.startsWith("/ajuda") ||
-    pathname.startsWith("/expansao") ||
     pathname.startsWith("/perfil") ||
     pathname.startsWith("/solucao") ||
     pathname.startsWith("/solucoes") ||
@@ -63,7 +63,6 @@ function getUnauthenticatedRedirectPath(pathname: string) {
     pathname.startsWith("/interacoes") ||
     pathname.startsWith("/proximos-envios") ||
     pathname.startsWith("/ajuda") ||
-    pathname.startsWith("/expansao") ||
     pathname.startsWith("/perfil") ||
     pathname.startsWith("/solucao") ||
     pathname.startsWith("/solucoes") ||

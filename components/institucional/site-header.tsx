@@ -65,7 +65,7 @@ export function SiteHeader({ currentPath = "/" }: SiteHeaderProps) {
           <Link href={`${getLinkPrefix()}#planos`} className="text-sm font-medium hover:text-primary transition-colors">
             Planos
           </Link>
-          <Link href="/expansao" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link href="/recursos-adicionais" className="text-sm font-medium hover:text-primary transition-colors">
             Recursos Adicionais
           </Link>
           <Link href="/blog" className="text-sm font-medium hover:text-primary transition-colors">
@@ -118,7 +118,7 @@ export function SiteHeader({ currentPath = "/" }: SiteHeaderProps) {
               Planos
             </Link>
             <Link
-              href="/expansao"
+              href="/recursos-adicionais"
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
