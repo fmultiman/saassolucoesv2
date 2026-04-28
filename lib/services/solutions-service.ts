@@ -1,15 +1,24 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import type { Json } from "@/lib/supabase/types"
 
 export type Solution = {
   id: number
+  slug: string | null
   name: string
   description: string | null
   category: string | null
-  is_active: boolean
-  created_at?: string
-  updated_at?: string
+  icon: string | null
+  color: string | null
+  is_active: boolean | null
+  is_recommended: boolean | null
+  is_premium: boolean | null
+  premium_plan: string | null
+  activations: number | null
+  is_available: boolean | null
+  created_at: string | null
+  updated_at: string | null
   custom_price?: number | null
-  custom_limits?: Record<string, any> | null
+  custom_limits?: Json | null
 }
 
 export class SolutionsService {
@@ -72,7 +81,7 @@ export class SolutionsService {
     }
 
     // Extrair os IDs das soluções
-    const solutionIds = planSolutions.map((ps) => ps.solution_id)
+    const solutionIds = planSolutions.map((ps) => ps.solution_id).filter((id): id is number => id !== null)
 
     // Buscar as soluções correspondentes
     const { data: solutions, error: solutionsError } = await supabase
@@ -109,7 +118,7 @@ export class SolutionsService {
     reason?: string
     planId?: number
     customPrice?: number | null
-    customLimits?: Record<string, any> | null
+    customLimits?: Json | null
   }> {
     try {
       const supabase = createServiceRoleClient()

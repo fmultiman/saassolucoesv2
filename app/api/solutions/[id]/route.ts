@@ -6,8 +6,12 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
+    if (Number.isNaN(solutionId)) {
+      return NextResponse.json({ error: "ID da solucao invalido" }, { status: 400 })
+    }
     const supabase = createServiceRoleClient()
-    const { data, error } = await supabase.from("solutions").select("*").eq("id", id).single()
+    const { data, error } = await supabase.from("solutions").select("*").eq("id", solutionId).single()
 
     if (error) {
       console.error(`Erro ao buscar solução ${id}:`, error)
@@ -28,10 +32,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
+    if (Number.isNaN(solutionId)) {
+      return NextResponse.json({ error: "ID da solucao invalido" }, { status: 400 })
+    }
     const body = await request.json()
 
     const supabase = createServiceRoleClient()
-    const { data, error } = await supabase.from("solutions").update(body).eq("id", id).select().single()
+    const { data, error } = await supabase.from("solutions").update(body).eq("id", solutionId).select().single()
 
     if (error) {
       console.error(`Erro ao atualizar solução ${id}:`, error)
@@ -52,8 +60,12 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   try {
     const { id } = await params
+    const solutionId = Number.parseInt(id, 10)
+    if (Number.isNaN(solutionId)) {
+      return NextResponse.json({ error: "ID da solucao invalido" }, { status: 400 })
+    }
     const supabase = createServiceRoleClient()
-    const { error } = await supabase.from("solutions").delete().eq("id", id)
+    const { error } = await supabase.from("solutions").delete().eq("id", solutionId)
 
     if (error) {
       console.error(`Erro ao excluir solução ${id}:`, error)

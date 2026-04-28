@@ -8,16 +8,22 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const planId = searchParams.get("planId")
     const solutionId = searchParams.get("solutionId")
+    const planIdNumber = planId ? Number.parseInt(planId, 10) : null
+    const solutionIdNumber = solutionId ? Number.parseInt(solutionId, 10) : null
+
+    if ((planId && Number.isNaN(planIdNumber)) || (solutionId && Number.isNaN(solutionIdNumber))) {
+      return NextResponse.json({ error: "Parametros invalidos" }, { status: 400 })
+    }
 
     const supabase = createServiceRoleClient()
     let query = supabase.from("plan_solutions").select("*")
 
     if (planId) {
-      query = query.eq("plan_id", planId)
+      query = query.eq("plan_id", planIdNumber!)
     }
 
     if (solutionId) {
-      query = query.eq("solution_id", solutionId)
+      query = query.eq("solution_id", solutionIdNumber!)
     }
 
     const { data, error } = await query
@@ -42,8 +48,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { plan_id, solution_id, custom_price, custom_limits } = body
+    const planId = Number(plan_id)
+    const solutionId = Number(solution_id)
 
-    if (!plan_id || !solution_id) {
+    if (!plan_id || !solution_id || Number.isNaN(planId) || Number.isNaN(solutionId)) {
       return NextResponse.json({ error: "IDs do plano e da solução são obrigatórios" }, { status: 400 })
     }
 
@@ -53,8 +61,8 @@ export async function POST(request: NextRequest) {
     const { data: existingData, error: existingError } = await supabase
       .from("plan_solutions")
       .select("*")
-      .eq("plan_id", plan_id)
-      .eq("solution_id", solution_id)
+      .eq("plan_id", planId)
+      .eq("solution_id", solutionId)
       .maybeSingle()
 
     if (existingError) {
@@ -70,8 +78,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("plan_solutions")
       .insert({
-        plan_id,
-        solution_id,
+        plan_id: planId,
+        solution_id: solutionId,
         custom_price,
         custom_limits,
       })

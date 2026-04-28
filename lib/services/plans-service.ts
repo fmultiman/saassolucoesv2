@@ -1,24 +1,31 @@
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import type { Json } from "@/lib/supabase/types"
 
 export type Plan = {
   id: number
   name: string
   description: string | null
-  price: number
-  is_active: boolean
-  features: Record<string, any> | null
-  created_at?: string
-  updated_at?: string
+  price: number | null
+  code: string | null
+  features: Json | null
+  interval: string | null
+  billing_cycle: string | null
+  is_active: boolean | null
+  is_featured: boolean | null
+  max_solutions: number | null
+  sort_order: number | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 export type PlanSolution = {
   id: number
-  plan_id: number
-  solution_id: number
+  plan_id: number | null
+  solution_id: number | null
   custom_price: number | null
-  custom_limits: Record<string, any> | null
-  created_at?: string
-  updated_at?: string
+  custom_limits: Json | null
+  created_at: string | null
+  updated_at?: string | null
 }
 
 export class PlansService {
@@ -89,7 +96,7 @@ export class PlansService {
 
     // Transformar os dados para um formato mais amigável
     return (
-      data?.map((item) => ({
+      data?.flatMap((item) => item.solutions ? [{
         id: item.solutions.id,
         name: item.solutions.name,
         description: item.solutions.description,
@@ -98,7 +105,7 @@ export class PlansService {
         plan_solution_id: item.id,
         custom_price: item.custom_price,
         custom_limits: item.custom_limits,
-      })) || []
+      }] : []) || []
     )
   }
 
@@ -130,7 +137,7 @@ export class PlansService {
 
     // Transformar os dados para um formato mais amigável
     return (
-      data?.map((item) => ({
+      data?.flatMap((item) => item.plans ? [{
         id: item.plans.id,
         name: item.plans.name,
         description: item.plans.description,
@@ -139,7 +146,7 @@ export class PlansService {
         plan_solution_id: item.id,
         custom_price: item.custom_price,
         custom_limits: item.custom_limits,
-      })) || []
+      }] : []) || []
     )
   }
 

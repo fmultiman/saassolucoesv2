@@ -6,7 +6,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const planId = searchParams.get("planId")
+    const planIdNumber = planId ? Number.parseInt(planId, 10) : null
     const limit = searchParams.get("limit") ? Number.parseInt(searchParams.get("limit")!) : undefined
+
+    if (planId && Number.isNaN(planIdNumber)) {
+      return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
+    }
 
     const supabase = createServiceRoleClient()
 
@@ -18,14 +23,14 @@ export async function GET(request: Request) {
       const { data: planSolutions, error: planError } = await supabase
         .from("plan_solutions")
         .select("solution_id")
-        .eq("plan_id", planId)
+        .eq("plan_id", planIdNumber!)
 
       if (planError) {
         return NextResponse.json({ error: planError.message }, { status: 500 })
       }
 
       // Extrair os IDs das soluções
-      const solutionIds = planSolutions.map((ps) => ps.solution_id)
+      const solutionIds = planSolutions.map((ps) => ps.solution_id).filter((id): id is number => id !== null)
 
       // Se não houver soluções associadas ao plano, retornar array vazio
       if (solutionIds.length === 0) {

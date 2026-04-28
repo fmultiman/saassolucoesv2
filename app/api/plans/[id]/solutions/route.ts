@@ -10,7 +10,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     const { searchParams } = new URL(request.url)
     const countOnly = searchParams.get("count") === "true"
-    const planId = id
+    const planId = Number.parseInt(id, 10)
+    if (Number.isNaN(planId)) {
+      return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
+    }
 
     const cookieStore = await cookies()
     const supabase = createClient(cookieStore)
@@ -44,7 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       }
 
       // Extrair os IDs das soluções
-      const solutionIds = planSolutions.map((ps) => ps.solution_id)
+      const solutionIds = planSolutions.map((ps) => ps.solution_id).filter((solutionId): solutionId is number => solutionId !== null)
 
       // Buscar detalhes das soluções
       const { data: solutions, error: solutionsError } = await supabase

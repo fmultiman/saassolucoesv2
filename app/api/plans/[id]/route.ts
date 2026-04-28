@@ -6,10 +6,13 @@ import { NextResponse } from "next/server"
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-
+    const planId = Number.parseInt(id, 10)
+    if (Number.isNaN(planId)) {
+      return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
+    }
     const supabase = createServiceRoleClient()
 
-    const { data, error } = await supabase.from("plans").select("*").eq("id", id).single()
+    const { data, error } = await supabase.from("plans").select("*").eq("id", planId).single()
 
     if (error) {
       console.error("Erro ao buscar plano:", error)
@@ -34,13 +37,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params
+    const planId = Number.parseInt(id, 10)
+    if (Number.isNaN(planId)) {
+      return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
+    }
     const body = await request.json()
     const { name, description, price, features } = body
 
     const supabase = createServiceRoleClient()
 
     // Verificar se o plano existe
-    const { data: existingData, error: existingError } = await supabase.from("plans").select("*").eq("id", id).single()
+    const { data: existingData, error: existingError } = await supabase.from("plans").select("*").eq("id", planId).single()
 
     if (existingError) {
       console.error("Erro ao verificar plano existente:", existingError)
@@ -61,7 +68,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         features: features !== undefined ? features : existingData.features,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id)
+      .eq("id", planId)
       .select()
       .single()
 
@@ -84,11 +91,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   try {
     const { id } = await params
+    const planId = Number.parseInt(id, 10)
+    if (Number.isNaN(planId)) {
+      return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
+    }
 
     const supabase = createServiceRoleClient()
 
     // Verificar se há usuários usando este plano antes de excluir
-    const { data: users, error: usersError } = await supabase.from("users").select("id").eq("plan_id", id).limit(1)
+    const { data: users, error: usersError } = await supabase.from("users").select("id").eq("plan_id", planId).limit(1)
 
     if (usersError) {
       console.error("Erro ao verificar usuários do plano:", usersError)
@@ -103,7 +114,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     // Excluir as associações com soluções primeiro
-    const { error: planSolutionsError } = await supabase.from("plan_solutions").delete().eq("plan_id", id)
+    const { error: planSolutionsError } = await supabase.from("plan_solutions").delete().eq("plan_id", planId)
 
     if (planSolutionsError) {
       console.error("Erro ao excluir associações do plano:", planSolutionsError)
@@ -111,7 +122,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     // Excluir o plano
-    const { error } = await supabase.from("plans").delete().eq("id", id)
+    const { error } = await supabase.from("plans").delete().eq("id", planId)
 
     if (error) {
       console.error("Erro ao excluir plano:", error)
