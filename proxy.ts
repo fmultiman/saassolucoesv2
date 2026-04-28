@@ -49,6 +49,29 @@ function getRedirectPath(pathname: string, userType?: string | null) {
   return null
 }
 
+function getUnauthenticatedRedirectPath(pathname: string) {
+  if (isRoute(pathname, publicRoutes) || isRoute(pathname, authRoutes)) return null
+  if (pathname.startsWith("/admin")) return "/login/admin"
+
+  const protectedClientRoutes =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/conta") ||
+    pathname.startsWith("/configuracoes") ||
+    pathname.startsWith("/minhas-solucoes") ||
+    pathname.startsWith("/assinatura") ||
+    pathname.startsWith("/metricas") ||
+    pathname.startsWith("/interacoes") ||
+    pathname.startsWith("/proximos-envios") ||
+    pathname.startsWith("/ajuda") ||
+    pathname.startsWith("/expansao") ||
+    pathname.startsWith("/perfil") ||
+    pathname.startsWith("/solucao") ||
+    pathname.startsWith("/solucoes") ||
+    pathname.startsWith("/onboarding")
+
+  return protectedClientRoutes ? "/login" : null
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -92,8 +115,8 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      if (pathname.startsWith("/admin")) return redirectWithCookies("/login/admin")
-      if (getRedirectPath(pathname, "client")) return redirectWithCookies("/login")
+      const redirectPath = getUnauthenticatedRedirectPath(pathname)
+      if (redirectPath) return redirectWithCookies(redirectPath)
       return response
     }
 
