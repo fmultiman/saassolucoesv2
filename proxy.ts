@@ -55,7 +55,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const res = NextResponse.next()
+  let res = NextResponse.next({
+    request,
+  })
+
+  const redirectWithCookies = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url)
+    res.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+    return redirectResponse
+  }
 
   try {
     const { supabaseUrl, supabaseKey } = getSupabasePublicConfig()
@@ -66,31 +76,20 @@ export async function proxy(request: NextRequest) {
       supabaseKey,
       {
         cookies: {
-          get(name) {
-            return request.cookies.get(name)?.value
+          getAll() {
+            return request.cookies.getAll()
           },
-          set(name, value, options) {
-            request.cookies.set({
-              name,
-              value,
-              ...options,
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => {
+              request.cookies.set(name, value)
             })
-            res.cookies.set({
-              name,
-              value,
-              ...options,
+
+            res = NextResponse.next({
+              request,
             })
-          },
-          remove(name, options) {
-            request.cookies.set({
-              name,
-              value: "",
-              ...options,
-            })
-            res.cookies.set({
-              name,
-              value: "",
-              ...options,
+
+            cookiesToSet.forEach(({ name, value, options }) => {
+              res.cookies.set(name, value, options)
             })
           },
         },
@@ -99,16 +98,16 @@ export async function proxy(request: NextRequest) {
 
     // Verificar se o usuário está autenticado
     const {
-      data: { session },
-    } = await supabase.auth.getSession()
+      data: { user },
+    } = await supabase.auth.getUser()
 
     // Se não estiver autenticado e tentar acessar rota protegida
-    if (!session) {
+    if (!user) {
       if (isAdminRoute) {
-        return NextResponse.redirect(new URL("/login/admin", request.url))
+        return redirectWithCookies(new URL("/login/admin", request.url))
       }
       if (isClientRoute) {
-        return NextResponse.redirect(new URL("/login", request.url))
+        return redirectWithCookies(new URL("/login", request.url))
       }
       // Se não for rota protegida nem pública, permite o acesso
       return res
@@ -118,7 +117,7 @@ export async function proxy(request: NextRequest) {
     const { data: userData, error } = await supabase
       .from("users")
       .select("user_type")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single()
 
     // Se houver erro ao buscar o tipo de usuário, tentar verificar pelo email
@@ -127,22 +126,22 @@ export async function proxy(request: NextRequest) {
 
       // Verificar se o email é de um administrador (solução temporária)
       const isAdminEmail =
-        session.user.email?.includes("admin") ||
-        session.user.email?.endsWith("@admin.com") ||
-        session.user.email?.endsWith("@admin.com.br") ||
-        session.user.email === "admin@saas-solucoes.com" ||
-        session.user.email === "admin@saas-solucoes.com.br"
+        user.email?.includes("admin") ||
+        user.email?.endsWith("@admin.com") ||
+        user.email?.endsWith("@admin.com.br") ||
+        user.email === "admin@saas-solucoes.com" ||
+        user.email === "admin@saas-solucoes.com.br"
 
       // Se for um email de admin, tratar como admin
       if (isAdminEmail) {
         // Se estiver na página de login normal e for admin, não redirecionar para login/admin
         if (pathname === "/login") {
-          return NextResponse.redirect(new URL("/admin", request.url))
+          return redirectWithCookies(new URL("/admin", request.url))
         }
 
         // Se estiver tentando acessar rotas de cliente sendo admin
         if (isClientRoute) {
-          return NextResponse.redirect(new URL("/admin", request.url))
+          return redirectWithCookies(new URL("/admin", request.url))
         }
       }
 
@@ -153,32 +152,32 @@ export async function proxy(request: NextRequest) {
 
     // Se estiver autenticado mas tentar acessar rota incompatível com seu tipo
     if (isAdminRoute && userType !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      return redirectWithCookies(new URL("/dashboard", request.url))
     }
 
     // Cliente tentando acessar login de admin
     if (isAdminLoginRoute && userType === "client") {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      return redirectWithCookies(new URL("/dashboard", request.url))
     }
 
     if (isClientRoute && userType !== "client") {
-      return NextResponse.redirect(new URL("/admin", request.url))
+      return redirectWithCookies(new URL("/admin", request.url))
     }
 
     // Se estiver autenticado e tentar acessar página de login
     if (pathname === "/login") {
       if (userType === "admin") {
-        return NextResponse.redirect(new URL("/admin", request.url))
+        return redirectWithCookies(new URL("/admin", request.url))
       }
       if (userType === "client") {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
+        return redirectWithCookies(new URL("/dashboard", request.url))
       }
     }
 
     // Se estiver autenticado e tentar acessar página de login de admin
     if (pathname === "/login/admin") {
       if (userType === "admin") {
-        return NextResponse.redirect(new URL("/admin", request.url))
+        return redirectWithCookies(new URL("/admin", request.url))
       }
     }
 
