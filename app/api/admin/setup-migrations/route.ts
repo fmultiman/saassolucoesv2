@@ -1,9 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { requireAdminMaintenanceMode } from "@/lib/admin-maintenance"
 import fs from "fs/promises"
 import path from "path"
 
 export async function POST(request: NextRequest) {
+  const maintenanceModeError = requireAdminMaintenanceMode()
+  if (maintenanceModeError) return maintenanceModeError
+
   try {
     // Ler o arquivo SQL
     const filePath = path.join(process.cwd(), "migrations", "000_create_execute_sql_function.sql")
