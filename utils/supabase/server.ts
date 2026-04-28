@@ -1,4 +1,4 @@
-import { createClient as createSupabaseServerClient } from "@supabase/supabase-js"
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
 import type { cookies } from "next/headers"
 import type { Database } from "./types"
 import { getSupabasePublicConfig } from "@/lib/supabase/env"

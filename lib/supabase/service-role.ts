@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import type { Database } from "./types"
 
 export function createServiceRoleClient() {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -8,7 +9,7 @@ export function createServiceRoleClient() {
     throw new Error("Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.")
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
