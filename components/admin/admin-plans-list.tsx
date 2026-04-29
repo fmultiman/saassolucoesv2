@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { TruncatedDescription } from "@/components/truncated-description"
-import { type Plan, PlansService } from "@/lib/services/plans-service"
+import type { Plan } from "@/lib/services/plans-service"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -76,10 +76,27 @@ export function AdminPlansList() {
     loadPlans()
   }, [])
 
+  const requestPlans = async (input: string, init?: RequestInit) => {
+    const response = await fetch(input, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
+    })
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null)
+      throw new Error(payload?.error || `Erro na requisição: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
   const loadPlans = async () => {
     try {
       setLoading(true)
-      const data = await PlansService.getAllPlans()
+      const data = (await requestPlans("/api/plans")) as Plan[]
       setPlans(data)
 
       // Após carregar os planos, buscar a contagem de soluções para cada um
@@ -175,7 +192,10 @@ export function AdminPlansList() {
 
       if (editingPlan) {
         // Atualizar plano existente
-        const updated = await PlansService.updatePlan(editingPlan.id, planData)
+        const updated = (await requestPlans(`/api/plans/${editingPlan.id}`, {
+          method: "PUT",
+          body: JSON.stringify(planData),
+        })) as Plan
         setPlans(plans.map((p) => (p.id === editingPlan.id ? updated : p)))
         toast({
           title: "Sucesso",
@@ -183,7 +203,10 @@ export function AdminPlansList() {
         })
       } else {
         // Criar novo plano
-        const created = await PlansService.createPlan(planData)
+        const created = (await requestPlans("/api/plans", {
+          method: "POST",
+          body: JSON.stringify(planData),
+        })) as Plan
         setPlans([...plans, created])
         toast({
           title: "Sucesso",
@@ -206,7 +229,7 @@ export function AdminPlansList() {
     if (!planToDelete) return
 
     try {
-      await PlansService.deletePlan(planToDelete.id)
+      await requestPlans(`/api/plans/${planToDelete.id}`, { method: "DELETE" })
       setPlans(plans.filter((p) => p.id !== planToDelete.id))
       toast({
         title: "Sucesso",
