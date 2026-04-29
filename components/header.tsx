@@ -27,7 +27,6 @@ export function Header() {
     try {
       console.log("Iniciando processo de logout")
 
-      // Fazer logout no Supabase
       const { error } = await supabase.auth.signOut()
 
       if (error) {
@@ -36,12 +35,9 @@ export function Header() {
       }
 
       console.log("Logout bem-sucedido")
-
-      // Redirecionar para a página inicial
       window.location.href = "/"
     } catch (error) {
       console.error("Erro ao fazer logout:", error)
-      // Mesmo em caso de erro, vamos redirecionar para a página inicial
       window.location.href = "/"
     } finally {
       setIsLoggingOut(false)

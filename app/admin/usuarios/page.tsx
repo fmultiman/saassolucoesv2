@@ -11,18 +11,16 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export default async function AdminUsersPage() {
-  // Inicializar o cliente Supabase com a chave de serviço
   const supabaseAdmin = createServiceRoleClient()
 
-  // Buscar usuários do Supabase
   const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
 
   if (authError) {
     console.error("Erro ao buscar usuários:", authError)
     return (
-      <div className="container mx-auto py-10 px-4 overflow-x-hidden max-w-full">
-        <h1 className="text-2xl font-bold mb-4">Gerenciar Usuários</h1>
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto max-w-full overflow-x-hidden px-4 py-10">
+        <h1 className="mb-4 text-2xl font-bold">Gerenciar Usuários</h1>
+        <div className="mb-6 flex items-center justify-between">
           <p>Erro ao carregar usuários. Por favor, tente novamente mais tarde.</p>
           <CreateUserModal />
         </div>
@@ -30,14 +28,12 @@ export default async function AdminUsersPage() {
     )
   }
 
-  // Buscar dados adicionais da tabela users
   const { data: publicUsers, error: publicError } = await supabaseAdmin.from("users").select("*")
 
   if (publicError) {
     console.error("Erro ao buscar dados adicionais dos usuários:", publicError)
   }
 
-  // Combinar dados de auth.users e public.users
   const users =
     authUsers?.users.map((authUser) => {
       const publicUser = publicUsers?.find((pu) => pu.id === authUser.id)
@@ -56,7 +52,7 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="w-full overflow-x-hidden">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Gerencie todos os usuários da plataforma, seus perfis e permissões.</p>

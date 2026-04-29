@@ -41,6 +41,11 @@ type ApiSolution = {
   activations?: number | null
 }
 
+type UserPlanRecord = {
+  plan?: string | null
+  plan_id?: number | null
+}
+
 type ManagedSolution = {
   id: string
   nome: string
@@ -78,12 +83,20 @@ export default function MinhasSolucoesPage() {
         setLoading(true)
         setError(null)
 
-        let planId = null
+        let planId: number | null = null
         if (user?.id) {
           const userResponse = await fetch(`/api/users/${user.id}`)
           if (userResponse.ok) {
-            const userData = await userResponse.json()
-            planId = userData.plan_id
+            const userData = (await userResponse.json()) as UserPlanRecord
+            planId = userData.plan_id ?? null
+
+            if (!planId && userData.plan) {
+              const planResponse = await fetch(`/api/plans/by-code/${encodeURIComponent(userData.plan)}`)
+              if (planResponse.ok) {
+                const planData = await planResponse.json()
+                planId = planData.id ?? null
+              }
+            }
           }
         }
 

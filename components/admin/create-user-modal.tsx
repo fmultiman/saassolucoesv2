@@ -82,7 +82,7 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
     void loadPlans()
   }, [])
 
-  const handleChange = (field: keyof UserFormData, value: any) => {
+  const handleChange = (field: keyof UserFormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (field === "email") {
       setEmailExists(false)
@@ -116,8 +116,8 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
 
     if (!formData.nome || !formData.email) {
       setError("Nome e email são obrigatórios")
@@ -146,7 +146,6 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
         description: `Email: ${formData.email}`,
       })
 
-      // Resetar
       setOpen(false)
       setEmailExists(false)
       setFormData({
@@ -158,13 +157,14 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
       })
 
       onUserCreated?.()
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro inesperado"
       console.error("Erro ao criar usuário:", err)
-      setError(err.message || "Erro inesperado")
+      setError(message)
       toast({
         variant: "destructive",
         title: "Erro ao criar usuário",
-        description: err.message || "Erro inesperado",
+        description: message,
       })
     } finally {
       setIsLoading(false)
@@ -172,11 +172,11 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
   }
 
   const handleEmailBlur = () => {
-    if (formData.email) checkEmail(formData.email)
+    if (formData.email) void checkEmail(formData.email)
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
+    <Dialog open={open} onOpenChange={(value) => setOpen(value)}>
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="mr-2 h-4 w-4" />
@@ -207,7 +207,7 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
               <Input
                 id="nome"
                 value={formData.nome}
-                onChange={(e) => handleChange("nome", e.target.value)}
+                onChange={(event) => handleChange("nome", event.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -216,18 +216,18 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
               <Label htmlFor="email" className="text-right">
                 Email
               </Label>
-              <div className="col-span-3 relative">
+              <div className="relative col-span-3">
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
+                  onChange={(event) => handleChange("email", event.target.value)}
                   onBlur={handleEmailBlur}
                   required
                   className={emailExists && !formData.forceCreate ? "border-red-500 pr-8" : ""}
                 />
                 {isCheckingEmail && (
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 transform">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
@@ -238,7 +238,7 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
               <Label htmlFor="tipoAcesso" className="text-right">
                 Tipo
               </Label>
-              <Select value={formData.tipoAcesso} onValueChange={(val) => handleChange("tipoAcesso", val)}>
+              <Select value={formData.tipoAcesso} onValueChange={(value) => handleChange("tipoAcesso", value)}>
                 <SelectTrigger id="tipoAcesso" className="col-span-3">
                   <SelectValue placeholder="Tipo de acesso" />
                 </SelectTrigger>
@@ -254,7 +254,7 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
                 <Label htmlFor="plano" className="text-right">
                   Plano
                 </Label>
-                <Select value={formData.plano} onValueChange={(val) => handleChange("plano", val)}>
+                <Select value={formData.plano} onValueChange={(value) => handleChange("plano", value)}>
                   <SelectTrigger id="plano" className="col-span-3">
                     <SelectValue placeholder="Plano" />
                   </SelectTrigger>
@@ -270,11 +270,11 @@ export function CreateUserModal({ onUserCreated }: CreateUserModalProps) {
             )}
 
             {emailExists && (
-              <div className="flex items-center space-x-2 ml-auto">
+              <div className="ml-auto flex items-center space-x-2">
                 <Checkbox
                   id="forceCreate"
                   checked={formData.forceCreate}
-                  onCheckedChange={(val) => handleChange("forceCreate", val === true)}
+                  onCheckedChange={(value) => handleChange("forceCreate", value === true)}
                 />
                 <Label htmlFor="forceCreate" className="text-sm text-muted-foreground">
                   Forçar criação mesmo assim

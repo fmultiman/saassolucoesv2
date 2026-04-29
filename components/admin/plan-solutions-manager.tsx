@@ -1,18 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 
-// Tipos
 type Solution = {
   id: number
   name: string
@@ -51,38 +49,30 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const { toast } = useToast()
 
-  // Carregar dados do plano e soluções associadas
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
 
-        // Buscar dados do plano
-        const planResponse = await fetch(`/api/plans/${planId}`)
-        if (!planResponse.ok) {
-          throw new Error(`Erro ao buscar plano: ${planResponse.status}`)
-        }
-        const planData = await planResponse.json()
+        const [planResponse, solutionsResponse, planSolutionsResponse] = await Promise.all([
+          fetch(`/api/plans/${planId}`),
+          fetch("/api/solutions"),
+          fetch(`/api/plan-solutions?planId=${planId}`),
+        ])
+
+        if (!planResponse.ok) throw new Error(`Erro ao buscar plano: ${planResponse.status}`)
+        if (!solutionsResponse.ok) throw new Error(`Erro ao buscar soluções: ${solutionsResponse.status}`)
+        if (!planSolutionsResponse.ok) throw new Error(`Erro ao buscar associações: ${planSolutionsResponse.status}`)
+
+        const [planData, solutionsData, planSolutionsData] = await Promise.all([
+          planResponse.json(),
+          solutionsResponse.json(),
+          planSolutionsResponse.json(),
+        ])
+
         setPlan(planData)
-
-        // Buscar todas as soluções
-        const solutionsResponse = await fetch("/api/solutions")
-        if (!solutionsResponse.ok) {
-          throw new Error(`Erro ao buscar soluções: ${solutionsResponse.status}`)
-        }
-        const solutionsData = await solutionsResponse.json()
         setSolutions(solutionsData)
-
-        // Buscar soluções associadas ao plano
-        const planSolutionsResponse = await fetch(`/api/plan-solutions?planId=${planId}`)
-        if (!planSolutionsResponse.ok) {
-          throw new Error(`Erro ao buscar associações: ${planSolutionsResponse.status}`)
-        }
-        const planSolutionsData = await planSolutionsResponse.json()
-
-        // Extrair IDs das soluções associadas
-        const selectedIds = planSolutionsData.map((ps: PlanSolution) => ps.solution_id)
-        setSelectedSolutions(selectedIds)
+        setSelectedSolutions(planSolutionsData.map((ps: PlanSolution) => ps.solution_id))
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
         toast({
@@ -96,16 +86,16 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
     }
 
     if (planId) {
-      fetchData()
+      void fetchData()
     }
   }, [planId, toast])
 
-  // Filtrar soluções com base no termo de pesquisa
   const filteredSolutions = solutions.filter((solution) =>
     solution.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  // Adicionar uma solução ao plano
+  const availableSolutions = filteredSolutions.filter((solution) => !selectedSolutions.includes(solution.id))
+
   const addSolutionToPlan = async (solutionId: number) => {
     try {
       setSaving(true)
@@ -126,8 +116,9 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
         throw new Error(errorData.error || `Erro ao adicionar solução: ${response.status}`)
       }
 
-      // Atualizar a lista de soluções selecionadas
-      setSelectedSolutions([...selectedSolutions, solutionId])
+      setSelectedSolutions((current) => [...current, solutionId])
+      setOpen(false)
+      setSearchTerm("")
 
       toast({
         title: "Sucesso",
@@ -142,29 +133,24 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
       })
     } finally {
       setSaving(false)
-      setOpen(false)
     }
   }
 
-  // Remover uma solução do plano
   const removeSolutionFromPlan = async (solutionId: number) => {
     try {
       setSaving(true)
 
-      // Buscar o ID da associação
       const planSolutionsResponse = await fetch(`/api/plan-solutions?planId=${planId}&solutionId=${solutionId}`)
       if (!planSolutionsResponse.ok) {
         throw new Error(`Erro ao buscar associação: ${planSolutionsResponse.status}`)
       }
-      const planSolutionsData = await planSolutionsResponse.json()
 
+      const planSolutionsData = await planSolutionsResponse.json()
       if (!planSolutionsData || planSolutionsData.length === 0) {
         throw new Error("Associação não encontrada")
       }
 
       const associationId = planSolutionsData[0].id
-
-      // Excluir a associação
       const response = await fetch(`/api/plan-solutions/${associationId}`, {
         method: "DELETE",
       })
@@ -173,8 +159,7 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
         throw new Error(`Erro ao remover solução: ${response.status}`)
       }
 
-      // Atualizar a lista de soluções selecionadas
-      setSelectedSolutions(selectedSolutions.filter((id) => id !== solutionId))
+      setSelectedSolutions((current) => current.filter((id) => id !== solutionId))
 
       toast({
         title: "Sucesso",
@@ -192,12 +177,11 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
     }
   }
 
-  // Renderizar esqueleto de carregamento
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="mb-2 h-8 w-64" />
           <Skeleton className="h-4 w-full" />
         </CardHeader>
         <CardContent>
@@ -219,8 +203,8 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
       <CardHeader>
         <CardTitle>Gerenciar Soluções do Plano {plan?.name}</CardTitle>
         <CardDescription>
-          Adicione ou remova soluções disponíveis para este plano. Os clientes com este plano só terão acesso às
-          soluções selecionadas aqui.
+          Adicione ou remova soluções disponíveis para este plano. Os clientes com este plano só terão acesso às soluções
+          selecionadas aqui.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -232,39 +216,46 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
-                  className="justify-between w-full md:w-[300px]"
+                  className="w-full justify-between md:w-[320px]"
                   disabled={saving}
                 >
                   <span>Adicionar solução...</span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full md:w-[300px] p-0">
-                <Command>
-                  <CommandInput placeholder="Buscar solução..." onValueChange={setSearchTerm} />
-                  <CommandList>
-                    <CommandEmpty>Nenhuma solução encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      {filteredSolutions
-                        .filter((solution) => !selectedSolutions.includes(solution.id))
-                        .map((solution) => (
-                          <CommandItem
+              <PopoverContent className="w-full p-0 md:w-[340px]">
+                <div className="space-y-2 p-3">
+                  <Input
+                    placeholder="Buscar solução..."
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                  />
+                  <div className="max-h-[260px] overflow-y-auto">
+                    {availableSolutions.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">Nenhuma solução encontrada.</div>
+                    ) : (
+                      <div className="space-y-1">
+                        {availableSolutions.map((solution) => (
+                          <button
                             key={solution.id}
-                            value={solution.name}
-                            onSelect={() => addSolutionToPlan(solution.id)}
+                            type="button"
+                            className="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => void addSolutionToPlan(solution.id)}
+                            disabled={saving}
                           >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedSolutions.includes(solution.id) ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                            {solution.name}
-                          </CommandItem>
+                            <div className="min-w-0">
+                              <div className="font-medium">{solution.name}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {solution.description || "Sem descrição"}
+                              </div>
+                            </div>
+                            <Check className="ml-3 h-4 w-4 shrink-0 opacity-60" />
+                          </button>
                         ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </PopoverContent>
             </Popover>
           </div>
@@ -274,17 +265,12 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
               solutions
                 .filter((solution) => selectedSolutions.includes(solution.id))
                 .map((solution) => (
-                  <div
-                    key={solution.id}
-                    className="flex items-center justify-between p-3 border rounded-md hover:bg-accent/50"
-                  >
+                  <div key={solution.id} className="flex items-center justify-between rounded-md border p-3 hover:bg-accent/50">
                     <div className="flex items-center gap-2">
                       <Checkbox checked disabled />
                       <div>
                         <p className="font-medium">{solution.name}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {solution.description || "Sem descrição"}
-                        </p>
+                        <p className="line-clamp-1 text-sm text-muted-foreground">{solution.description || "Sem descrição"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -292,7 +278,7 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeSolutionFromPlan(solution.id)}
+                        onClick={() => void removeSolutionFromPlan(solution.id)}
                         disabled={saving}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
@@ -306,7 +292,7 @@ export function PlanSolutionsManager({ planId }: PlanSolutionsManagerProps) {
                   <Plus className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <h3 className="mt-3 text-lg font-medium">Nenhuma solução adicionada</h3>
-                <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                   Este plano não possui soluções associadas. Adicione soluções para que os clientes deste plano possam
                   acessá-las.
                 </p>

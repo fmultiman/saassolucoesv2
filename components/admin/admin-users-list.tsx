@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Mail, Edit, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { EditUserModal } from "@/components/admin/edit-user-modal"
 
 interface User {
   id: string
@@ -34,8 +35,8 @@ interface AdminUsersListProps {
 
 export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
 
-  // Função para formatar a data da última atividade
   const formatLastActivity = (date?: string) => {
     if (!date) return "Nunca"
 
@@ -50,7 +51,6 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
     }
   }
 
-  // Função para obter a cor do badge de status
   const getStatusBadgeVariant = (status: string) => {
     switch (status.toLowerCase()) {
       case "active":
@@ -66,7 +66,6 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
     }
   }
 
-  // Função para traduzir o status
   const translateStatus = (status: string) => {
     switch (status.toLowerCase()) {
       case "active":
@@ -82,91 +81,116 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
     }
   }
 
-  // Função para traduzir o plano
   const translatePlan = (plan: string) => {
     switch (plan.toLowerCase()) {
       case "free":
+      case "gratuito":
         return "Gratuito"
       case "basic":
-        return "Básico"
+      case "essencial":
+        return "Essencial"
       case "pro":
-        return "Pro"
+      case "profissional":
+        return "Profissional"
       case "enterprise":
-        return "Enterprise"
+      case "completo":
+        return "Completo"
       default:
         return plan
     }
   }
 
+  const handleUserUpdated = (updatedUser: Partial<User> & { id: string }) => {
+    setUsers((current) =>
+      current.map((user) => (user.id === updatedUser.id ? { ...user, ...updatedUser } : user)),
+    )
+  }
+
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Usuário</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Plano</TableHead>
-            <TableHead className="hidden md:table-cell">Soluções Ativas</TableHead>
-            <TableHead className="hidden md:table-cell">Última Atividade</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.length === 0 ? (
+    <>
+      <div className="overflow-x-auto rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8">
-                Nenhum usuário encontrado
-              </TableCell>
+              <TableHead>Usuário</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead className="hidden md:table-cell">Soluções Ativas</TableHead>
+              <TableHead className="hidden md:table-cell">Última Atividade</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          ) : (
-            users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{user.name}</span>
-                    <span className="text-sm text-muted-foreground">{user.email}</span>
-                    <span className="text-xs text-muted-foreground md:hidden">
-                      {translatePlan(user.plan)} • {user.active_solutions} soluções
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(user.status) as any}>{translateStatus(user.status)}</Badge>
-                </TableCell>
-                <TableCell>{translatePlan(user.plan)}</TableCell>
-                <TableCell className="hidden md:table-cell">{user.active_solutions}</TableCell>
-                <TableCell className="hidden md:table-cell">{formatLastActivity(user.last_sign_in_at)}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Abrir menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Reenviar e-mail de acesso
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar usuário
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir usuário
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          </TableHeader>
+          <TableBody>
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center">
+                  Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{user.name}</span>
+                      <span className="text-sm text-muted-foreground">{user.email}</span>
+                      <span className="text-xs text-muted-foreground md:hidden">
+                        {translatePlan(user.plan)} • {user.active_solutions} soluções
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusBadgeVariant(user.status) as never}>{translateStatus(user.status)}</Badge>
+                  </TableCell>
+                  <TableCell>{translatePlan(user.plan)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{user.active_solutions}</TableCell>
+                  <TableCell className="hidden md:table-cell">{formatLastActivity(user.last_sign_in_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Reenviar e-mail de acesso
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(event) => {
+                            event.preventDefault()
+                            window.setTimeout(() => setEditingUser(user), 0)
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar usuário
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir usuário
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <EditUserModal
+        open={!!editingUser}
+        onOpenChange={(open) => {
+          if (!open) setEditingUser(null)
+        }}
+        user={editingUser}
+        onUserUpdated={handleUserUpdated}
+      />
+    </>
   )
 }

@@ -39,6 +39,11 @@ interface Solucao {
   premium_plan: string | null
 }
 
+type UserPlanRecord = {
+  plan?: string | null
+  plan_id?: number | null
+}
+
 // Mapeamento de ícones
 const iconMap: Record<string, LucideIcon> = {
   Bot: Bot,
@@ -79,13 +84,21 @@ export function Dashboard() {
         setLoading(true)
 
         // Primeiro, buscar o plano do usuário atual
-        let planId = null
+        let planId: number | null = null
 
         if (user?.id) {
           const userResponse = await fetch(`/api/users/${user.id}`)
           if (userResponse.ok) {
-            const userData = await userResponse.json()
-            planId = userData.plan_id
+            const userData = (await userResponse.json()) as UserPlanRecord
+            planId = userData.plan_id ?? null
+
+            if (!planId && userData.plan) {
+              const planResponse = await fetch(`/api/plans/by-code/${encodeURIComponent(userData.plan)}`)
+              if (planResponse.ok) {
+                const planData = await planResponse.json()
+                planId = planData.id ?? null
+              }
+            }
           }
         }
 
