@@ -1,11 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Eye, EyeOff, Edit, Trash2, BarChart2, Check, X } from "lucide-react"
+import { BarChart2, Check, Edit, Eye, EyeOff, Plus, Search, Trash2, X } from "lucide-react"
+import { marketplaceProducts } from "./admin-marketplace-data"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Dialog,
   DialogContent,
@@ -14,13 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { marketplaceProducts } from "./admin-marketplace-data"
+
+type MarketplaceProduct = (typeof marketplaceProducts)[number]
 
 export function AdminMarketplaceManager() {
   const [products, setProducts] = useState(marketplaceProducts)
@@ -31,13 +43,13 @@ export function AdminMarketplaceManager() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [planFilter, setPlanFilter] = useState("all")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [currentProduct, setCurrentProduct] = useState<any>(null)
+  const [currentProduct, setCurrentProduct] = useState<MarketplaceProduct | null>(null)
   const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false)
-  const [currentStats, setCurrentStats] = useState<any>(null)
+  const [currentStats, setCurrentStats] = useState<MarketplaceProduct | null>(null)
+  const [productToDelete, setProductToDelete] = useState<MarketplaceProduct | null>(null)
 
-  // Função para filtrar produtos
-  const filterProducts = () => {
-    let filtered = [...products]
+  const filterProducts = (nextProducts = products) => {
+    let filtered = [...nextProducts]
 
     if (searchTerm) {
       filtered = filtered.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -62,13 +74,11 @@ export function AdminMarketplaceManager() {
     setFilteredProducts(filtered)
   }
 
-  // Função para abrir o modal de edição
-  const openEditDialog = (product: any) => {
+  const openEditDialog = (product: MarketplaceProduct) => {
     setCurrentProduct({ ...product })
     setIsDialogOpen(true)
   }
 
-  // Função para abrir o modal de criação
   const openCreateDialog = () => {
     setCurrentProduct({
       id: Date.now().toString(),
@@ -90,65 +100,44 @@ export function AdminMarketplaceManager() {
     setIsDialogOpen(true)
   }
 
-  // Função para salvar produto (criar ou editar)
   const saveProduct = () => {
     if (!currentProduct) return
 
-    const isNewProduct = !products.find((p) => p.id === currentProduct.id)
+    const isNewProduct = !products.find((product) => product.id === currentProduct.id)
+    const nextProducts = isNewProduct
+      ? [...products, currentProduct]
+      : products.map((product) => (product.id === currentProduct.id ? currentProduct : product))
 
-    if (isNewProduct) {
-      setProducts([...products, currentProduct])
-    } else {
-      setProducts(products.map((p) => (p.id === currentProduct.id ? currentProduct : p)))
-    }
-
+    setProducts(nextProducts)
     setIsDialogOpen(false)
-    filterProducts()
+    filterProducts(nextProducts)
   }
 
-  // Função para excluir produto
-  const deleteProduct = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este produto?")) {
-      setProducts(products.filter((p) => p.id !== id))
-      setFilteredProducts(filteredProducts.filter((p) => p.id !== id))
-    }
+  const deleteProduct = () => {
+    if (!productToDelete) return
+
+    const nextProducts = products.filter((product) => product.id !== productToDelete.id)
+    setProducts(nextProducts)
+    setProductToDelete(null)
+    filterProducts(nextProducts)
   }
 
-  // Função para alternar visibilidade
   const toggleVisibility = (id: string, field: "showInstitutional" | "showDashboard") => {
-    setProducts(
-      products.map((p) => {
-        if (p.id === id) {
-          return { ...p, [field]: !p[field] }
-        }
-        return p
-      }),
+    const nextProducts = products.map((product) =>
+      product.id === id ? { ...product, [field]: !product[field] } : product,
     )
 
-    setFilteredProducts(
-      filteredProducts.map((p) => {
-        if (p.id === id) {
-          return { ...p, [field]: !p[field] }
-        }
-        return p
-      }),
-    )
+    setProducts(nextProducts)
+    filterProducts(nextProducts)
   }
 
-  // Função para mostrar estatísticas
-  const showStats = (product: any) => {
+  const showStats = (product: MarketplaceProduct) => {
     setCurrentStats(product)
     setIsStatsDialogOpen(true)
   }
 
-  // Aplicar filtros quando os valores mudarem
-  const applyFilters = () => {
-    filterProducts()
-  }
-
   return (
     <div className="space-y-4">
-      {/* Filtros e botão de novo produto */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-2">
           <div className="relative w-full md:w-64">
@@ -157,9 +146,9 @@ export function AdminMarketplaceManager() {
               placeholder="Buscar produtos..."
               className="pl-8"
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setTimeout(applyFilters, 300)
+              onChange={(event) => {
+                setSearchTerm(event.target.value)
+                window.setTimeout(() => filterProducts(), 300)
               }}
             />
           </div>
@@ -167,7 +156,7 @@ export function AdminMarketplaceManager() {
             value={categoryFilter}
             onValueChange={(value) => {
               setCategoryFilter(value)
-              setTimeout(applyFilters, 100)
+              window.setTimeout(() => filterProducts(), 100)
             }}
           >
             <SelectTrigger className="w-full md:w-40">
@@ -186,7 +175,7 @@ export function AdminMarketplaceManager() {
             value={areaFilter}
             onValueChange={(value) => {
               setAreaFilter(value)
-              setTimeout(applyFilters, 100)
+              window.setTimeout(() => filterProducts(), 100)
             }}
           >
             <SelectTrigger className="w-full md:w-40">
@@ -205,7 +194,7 @@ export function AdminMarketplaceManager() {
             value={statusFilter}
             onValueChange={(value) => {
               setStatusFilter(value)
-              setTimeout(applyFilters, 100)
+              window.setTimeout(() => filterProducts(), 100)
             }}
           >
             <SelectTrigger className="w-full md:w-40">
@@ -222,7 +211,7 @@ export function AdminMarketplaceManager() {
             value={planFilter}
             onValueChange={(value) => {
               setPlanFilter(value)
-              setTimeout(applyFilters, 100)
+              window.setTimeout(() => filterProducts(), 100)
             }}
           >
             <SelectTrigger className="w-full md:w-40">
@@ -242,7 +231,6 @@ export function AdminMarketplaceManager() {
         </Button>
       </div>
 
-      {/* Tabela de produtos */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -262,7 +250,7 @@ export function AdminMarketplaceManager() {
           <TableBody>
             {filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                   Nenhum produto encontrado com os filtros selecionados.
                 </TableCell>
               </TableRow>
@@ -304,7 +292,7 @@ export function AdminMarketplaceManager() {
                       <Button variant="ghost" size="sm" onClick={() => toggleVisibility(product.id, "showDashboard")}>
                         {product.showDashboard ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteProduct(product.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => setProductToDelete(product)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -316,9 +304,8 @@ export function AdminMarketplaceManager() {
         </Table>
       </div>
 
-      {/* Modal de edição/criação */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{currentProduct?.id ? "Editar Produto" : "Novo Produto"}</DialogTitle>
             <DialogDescription>
@@ -335,7 +322,7 @@ export function AdminMarketplaceManager() {
                   <Input
                     id="name"
                     value={currentProduct.name}
-                    onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })}
+                    onChange={(event) => setCurrentProduct({ ...currentProduct, name: event.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -363,7 +350,7 @@ export function AdminMarketplaceManager() {
                 <Input
                   id="description"
                   value={currentProduct.description}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, description: e.target.value })}
+                  onChange={(event) => setCurrentProduct({ ...currentProduct, description: event.target.value })}
                 />
               </div>
 
@@ -373,7 +360,7 @@ export function AdminMarketplaceManager() {
                   id="fullDescription"
                   rows={4}
                   value={currentProduct.fullDescription}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, fullDescription: e.target.value })}
+                  onChange={(event) => setCurrentProduct({ ...currentProduct, fullDescription: event.target.value })}
                 />
               </div>
 
@@ -437,7 +424,7 @@ export function AdminMarketplaceManager() {
                   <Input
                     id="clientAction"
                     value={currentProduct.clientAction}
-                    onChange={(e) => setCurrentProduct({ ...currentProduct, clientAction: e.target.value })}
+                    onChange={(event) => setCurrentProduct({ ...currentProduct, clientAction: event.target.value })}
                     placeholder="Ex: Ativar, Contratar, Ver mais..."
                   />
                 </div>
@@ -448,9 +435,7 @@ export function AdminMarketplaceManager() {
                   <Checkbox
                     id="showInstitutional"
                     checked={currentProduct.showInstitutional}
-                    onCheckedChange={(checked) =>
-                      setCurrentProduct({ ...currentProduct, showInstitutional: !!checked })
-                    }
+                    onCheckedChange={(checked) => setCurrentProduct({ ...currentProduct, showInstitutional: !!checked })}
                   />
                   <Label htmlFor="showInstitutional">Mostrar no site institucional</Label>
                 </div>
@@ -474,7 +459,6 @@ export function AdminMarketplaceManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de estatísticas */}
       <Dialog open={isStatsDialogOpen} onOpenChange={setIsStatsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -562,14 +546,14 @@ export function AdminMarketplaceManager() {
                       <h4 className="mb-2 text-sm font-medium">Usuários que ativaram</h4>
                       {currentStats.activations > 0 ? (
                         <div className="space-y-2">
-                          {Array.from({ length: Math.min(currentStats.activations, 5) }).map((_, i) => (
-                            <div key={i} className="flex items-center justify-between rounded-md border p-2">
+                          {Array.from({ length: Math.min(currentStats.activations, 5) }).map((_, index) => (
+                            <div key={index} className="flex items-center justify-between rounded-md border p-2">
                               <div className="flex items-center gap-2">
                                 <div className="h-8 w-8 rounded-full bg-primary/20" />
                                 <div>
-                                  <p className="text-sm font-medium">Usuário {i + 1}</p>
+                                  <p className="text-sm font-medium">Usuário {index + 1}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    Ativado em: {new Date(Date.now() - i * 86400000).toLocaleDateString()}
+                                    Ativado em: {new Date(Date.now() - index * 86400000).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
@@ -588,11 +572,31 @@ export function AdminMarketplaceManager() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{productToDelete?.name}</strong>? Essa ação remove o produto desta
+              gestão administrativa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteProduct}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
 
-// Funções auxiliares para obter labels
 function getCategoryLabel(category: string) {
   const categories: Record<string, string> = {
     integration: "Integração Externa",

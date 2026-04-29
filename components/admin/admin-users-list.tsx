@@ -1,7 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatDistanceToNow } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Edit, Mail, MoreHorizontal, Trash2 } from "lucide-react"
+import { EditUserModal } from "@/components/admin/edit-user-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,11 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Mail, Edit, Trash2 } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { EditUserModal } from "@/components/admin/edit-user-modal"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useToast } from "@/hooks/use-toast"
 
 interface User {
   id: string
@@ -36,6 +47,9 @@ interface AdminUsersListProps {
 export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
   const formatLastActivity = (date?: string) => {
     if (!date) return "Nunca"
@@ -106,6 +120,41 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
     )
   }
 
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setIsDeleting(true)
+
+      const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: "DELETE",
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(payload?.error || `Erro ao excluir usuário: ${response.status}`)
+      }
+
+      setUsers((current) => current.filter((user) => user.id !== userToDelete.id))
+      toast({
+        title: "Usuário excluído",
+        description: `${userToDelete.name} foi removido com sucesso.`,
+      })
+      setUserToDelete(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível excluir o usuário."
+      console.error("Erro ao excluir usuário:", error)
+      toast({
+        title: "Erro ao excluir usuário",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <>
       <div className="overflow-x-auto rounded-md border">
@@ -169,7 +218,13 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
                           <Edit className="mr-2 h-4 w-4" />
                           Editar usuário
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onSelect={(event) => {
+                            event.preventDefault()
+                            window.setTimeout(() => setUserToDelete(user), 0)
+                          }}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir usuário
                         </DropdownMenuItem>
@@ -191,6 +246,33 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
         user={editingUser}
         onUserUpdated={handleUserUpdated}
       />
+
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setUserToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{userToDelete?.name}</strong>? Essa ação remove o acesso da conta e
+              os registros vinculados no admin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
