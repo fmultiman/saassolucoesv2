@@ -5,23 +5,24 @@ import type { MarketplaceProduct } from "@/components/marketplace/marketplace-da
 
 interface MarketplaceGridProps {
   products: MarketplaceProduct[]
-  isPublic?: boolean
+  isPublicView?: boolean
+  isLoggedIn?: boolean
 }
 
-export function MarketplaceGrid({ products, isPublic = false }: MarketplaceGridProps) {
+export function MarketplaceGrid({ products, isPublicView = false, isLoggedIn = false }: MarketplaceGridProps) {
   if (products.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <h3 className="text-xl font-medium">Nenhuma solução encontrada</h3>
-        <p className="text-muted-foreground mt-2">Tente ajustar seus filtros ou busca</p>
+        <p className="mt-2 text-muted-foreground">Tente ajustar seus filtros ou busca</p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((product) => (
-        <MarketplaceCard key={product.id} product={product} isPublic={isPublic} />
+        <MarketplaceCard key={product.id} product={product} isPublicView={isPublicView} isLoggedIn={isLoggedIn} />
       ))}
     </div>
   )

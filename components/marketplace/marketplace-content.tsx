@@ -4,6 +4,7 @@ import { useState } from "react"
 import { MarketplaceFilters } from "@/components/marketplace/marketplace-filters"
 import { MarketplaceGrid } from "@/components/marketplace/marketplace-grid"
 import { marketplaceProducts } from "@/components/marketplace/marketplace-data"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 interface MarketplaceContentProps {
   isPublic?: boolean
@@ -12,8 +13,10 @@ interface MarketplaceContentProps {
 export function MarketplaceContent({ isPublic = false }: MarketplaceContentProps) {
   const [activeFilter, setActiveFilter] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const { user, loading } = useCurrentUser()
 
-  // Filtra os produtos com base no filtro ativo e na busca
+  const isLoggedIn = !loading && !!user
+
   const filteredProducts = marketplaceProducts.filter((product) => {
     const matchesFilter = activeFilter === "all" || product.categories.includes(activeFilter)
     const matchesSearch =
@@ -42,7 +45,7 @@ export function MarketplaceContent({ isPublic = false }: MarketplaceContentProps
         setSearchQuery={setSearchQuery}
       />
 
-      <MarketplaceGrid products={filteredProducts} isPublic={isPublic} />
+      <MarketplaceGrid products={filteredProducts} isPublicView={isPublic} isLoggedIn={isLoggedIn} />
     </div>
   )
 }

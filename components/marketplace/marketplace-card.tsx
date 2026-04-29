@@ -11,13 +11,15 @@ import { cn } from "@/lib/utils"
 
 interface MarketplaceCardProps {
   product: MarketplaceProduct
-  isPublic?: boolean
+  isPublicView?: boolean
+  isLoggedIn?: boolean
 }
 
-export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardProps) {
+export function MarketplaceCard({ product, isPublicView = false, isLoggedIn = false }: MarketplaceCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
-  // Determina o ícone com base na categoria principal do produto
+  const isInstitutionalMode = isPublicView && !isLoggedIn
+
   const getIcon = () => {
     const category = product.categories[0]
     switch (category) {
@@ -34,7 +36,6 @@ export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardPr
     }
   }
 
-  // Determina a cor da tag de status
   const getStatusColor = () => {
     switch (product.status) {
       case "included":
@@ -50,8 +51,11 @@ export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardPr
     }
   }
 
-  // Determina o texto do status
   const getStatusText = () => {
+    if (isInstitutionalMode && product.requiresLogin) {
+      return "Complemento interno"
+    }
+
     switch (product.status) {
       case "included":
         return "Incluído no seu plano"
@@ -66,12 +70,41 @@ export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardPr
     }
   }
 
-  // Determina o botão de ação com base no status e se é público ou não
+  const getCategoryBadge = () => {
+    const category = product.categories[0]
+    switch (category) {
+      case "integration":
+        return <Badge variant="outline">Integração</Badge>
+      case "template":
+        return <Badge variant="outline">Template</Badge>
+      case "service":
+        return <Badge variant="outline">Serviço</Badge>
+      case "capacity":
+        return <Badge variant="outline">Capacidade</Badge>
+      case "premium":
+        return <Badge variant="outline">Premium</Badge>
+      default:
+        return <Badge variant="outline">Solução</Badge>
+    }
+  }
+
   const renderActionButton = () => {
-    if (isPublic && product.requiresLogin) {
+    if (isInstitutionalMode) {
+      if (product.requiresLogin) {
+        return (
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/login">Acesse a plataforma</Link>
+          </Button>
+        )
+      }
+
+      if (product.status === "external") {
+        return <Button className="w-full">Solicitar proposta</Button>
+      }
+
       return (
-        <Button variant="outline" className="w-full" asChild>
-          <Link href="/dashboard">Acesse a plataforma</Link>
+        <Button variant="outline" className="w-full">
+          Ver mais
         </Button>
       )
     }
@@ -102,36 +135,14 @@ export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardPr
     }
   }
 
-  // Determina a tag de categoria
-  const getCategoryBadge = () => {
-    const category = product.categories[0]
-    switch (category) {
-      case "integration":
-        return <Badge variant="outline">Integração</Badge>
-      case "template":
-        return <Badge variant="outline">Template</Badge>
-      case "service":
-        return <Badge variant="outline">Serviço</Badge>
-      case "capacity":
-        return <Badge variant="outline">Capacidade</Badge>
-      case "premium":
-        return <Badge variant="outline">Premium</Badge>
-      default:
-        return <Badge variant="outline">Solução</Badge>
-    }
-  }
-
   return (
     <Card
-      className={cn(
-        "overflow-hidden transition-all duration-300 flex flex-col h-full",
-        isHovered && "shadow-md scale-[1.02]",
-      )}
+      className={cn("flex h-full flex-col overflow-hidden transition-all duration-300", isHovered && "scale-[1.02] shadow-md")}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+        <div className="flex items-start justify-between">
           <div
             className={cn(
               "rounded-md p-2",
@@ -153,28 +164,28 @@ export function MarketplaceCard({ product, isPublic = false }: MarketplaceCardPr
           </Badge>
         </div>
         <CardTitle className="mt-2 text-lg">{product.name}</CardTitle>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="mt-1 flex items-center gap-2">
           {getCategoryBadge()}
-          {isPublic && product.requiresLogin && (
-            <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-200">
-              <Lock className="h-3 w-3 mr-1" />
+          {isInstitutionalMode && product.requiresLogin && (
+            <Badge variant="outline" className="border-gray-200 bg-gray-500/10 text-gray-500">
+              <Lock className="mr-1 h-3 w-3" />
               Exige login
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <CardDescription className="line-clamp-2 min-h-[2.5rem]">{product.description}</CardDescription>
-        {isPublic && product.requiresLogin && (
-          <p className="text-xs text-muted-foreground mt-2 italic">
+        <CardDescription className="min-h-[2.5rem] line-clamp-2">{product.description}</CardDescription>
+        {isInstitutionalMode && product.requiresLogin && (
+          <p className="mt-2 text-xs italic text-muted-foreground">
             Essa solução é um complemento para usuários da plataforma. Faça login para ativar ou saber mais.
           </p>
         )}
       </CardContent>
       <CardFooter className="pt-2">
-        <div className="w-full flex gap-2">
+        <div className="flex w-full gap-2">
           {renderActionButton()}
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" title="Ver mais">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

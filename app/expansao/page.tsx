@@ -8,12 +8,12 @@ export default function ExpansaoPage() {
       <SiteHeader currentPath="/expansao" />
       <main className="container py-8 md:py-12">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Recursos Adicionais</h1>
+          <h1 className="mb-2 text-4xl font-bold tracking-tight">Recursos Adicionais</h1>
           <p className="text-xl text-muted-foreground">
             Expanda as capacidades da sua plataforma com nossas soluções e integrações
           </p>
         </div>
-        <MarketplaceContent isPublic={true} />
+        <MarketplaceContent isPublic />
       </main>
       <SiteFooter />
     </div>

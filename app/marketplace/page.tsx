@@ -1,5 +1,3 @@
-"use client"
+import ExpansaoPage from "@/app/expansao/page"
 
-export default function MarketplacePage() {
-  // Código existente permanece o mesmo
-}
+export default ExpansaoPage
