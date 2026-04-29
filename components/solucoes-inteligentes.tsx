@@ -32,6 +32,9 @@ import {
   Share2,
   ShoppingCart,
   Smile,
+  Info,
+  Play,
+  Square,
   Star,
   ThumbsUp,
   UserCheck,
@@ -43,6 +46,14 @@ import { useCurrentUser } from "@/hooks/use-current-user"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -80,6 +91,14 @@ type PlanSolutionRecord = {
   plan_id: number | null
   solution_id: number | null
 }
+
+type UserProfileResponse = {
+  profile?: {
+    preferences?: Record<string, unknown> | null
+  } | null
+}
+
+type SolutionPreferenceMap = Record<string, { enabled?: boolean }>
 
 const categorias: Categoria[] = [
   { id: "todos", label: "Todos" },
@@ -162,6 +181,9 @@ export function SolucoesInteligentes() {
   const [userPlanCode, setUserPlanCode] = useState<string | null>(null)
   const [plans, setPlans] = useState<PlanRecord[]>([])
   const [planSolutions, setPlanSolutions] = useState<PlanSolutionRecord[]>([])
+  const [solutionPreferences, setSolutionPreferences] = useState<SolutionPreferenceMap>({})
+  const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null)
+  const [savingSolutionId, setSavingSolutionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const tabsListRef = useRef<HTMLDivElement | null>(null)
@@ -175,11 +197,12 @@ export function SolucoesInteligentes() {
         setLoading(true)
         setError(null)
 
-        const [solutionsResponse, plansResponse, planSolutionsResponse, userResponse] = await Promise.all([
+        const [solutionsResponse, plansResponse, planSolutionsResponse, userResponse, profileResponse] = await Promise.all([
           fetch("/api/solutions/active"),
           fetch("/api/plans"),
           fetch("/api/plan-solutions"),
           user?.id ? fetch(`/api/users/${user.id}`) : Promise.resolve(null),
+          user?.id ? fetch("/api/user/profile") : Promise.resolve(null),
         ])
 
         if (!solutionsResponse.ok) {
@@ -211,6 +234,13 @@ export function SolucoesInteligentes() {
         } else {
           setUserPlanId(null)
           setUserPlanCode(null)
+        }
+
+        if (profileResponse && profileResponse.ok) {
+          const profileData = (await profileResponse.json()) as UserProfileResponse
+          setSolutionPreferences((profileData.profile?.preferences?.solutionStates as SolutionPreferenceMap) || {})
+        } else {
+          setSolutionPreferences({})
         }
       } catch (err) {
         console.error("Erro ao carregar soluções:", err)
@@ -279,6 +309,15 @@ export function SolucoesInteligentes() {
 
     return accessibleIds
   }, [effectiveUserPlanId, planSolutions])
+
+  const solutionStatus = useMemo(() => {
+    const statusMap: Record<string, boolean> = {}
+    for (const solution of solutions) {
+      const storedState = solutionPreferences[String(solution.id)]?.enabled
+      statusMap[String(solution.id)] = storedState ?? true
+    }
+    return statusMap
+  }, [solutionPreferences, solutions])
 
   const recomendados = useMemo(
     () =>
@@ -359,6 +398,42 @@ export function SolucoesInteligentes() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  const saveSolutionState = async (solutionId: string, enabled: boolean) => {
+    try {
+      setSavingSolutionId(solutionId)
+
+      const nextPreferences = {
+        ...solutionPreferences,
+        [solutionId]: {
+          ...(solutionPreferences[solutionId] || {}),
+          enabled,
+        },
+      }
+
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          preferences: {
+            solutionStates: nextPreferences,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar preferencia: ${response.status}`)
+      }
+
+      setSolutionPreferences(nextPreferences)
+    } catch (saveError) {
+      console.error("Erro ao salvar estado da solucao:", saveError)
+    } finally {
+      setSavingSolutionId(null)
+    }
+  }
+
   const renderSolutionsGrid = (items: Solution[], mode: "included" | "additional") => {
     if (items.length === 0) {
       return (
@@ -430,19 +505,48 @@ export function SolucoesInteligentes() {
             </CardContent>
             <CardFooter className="flex flex-grow-0 gap-2 pt-2">
               {mode === "included" ? (
-                solution.is_active ? (
+                solutionStatus[String(solution.id)] ? (
                   <>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={(event) => {
+                      event.preventDefault()
+                      setSelectedSolution(solution)
+                    }}>
                       Configurar
                     </Button>
-                    <Button variant="destructive" size="icon">
-                      <div className="h-4 w-4 rounded-full bg-current" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={savingSolutionId === String(solution.id)}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        void saveSolutionState(String(solution.id), false)
+                      }}
+                    >
+                      <Square className="h-4 w-4 text-red-500" />
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button className="flex-1">Ativar</Button>
-                    <Button variant="outline">Testar</Button>
+                    <Button
+                      className="flex-1"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        void saveSolutionState(String(solution.id), true)
+                      }}
+                    >
+                      Ativar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={savingSolutionId === String(solution.id)}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        void saveSolutionState(String(solution.id), true)
+                      }}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
                   </>
                 )
               ) : (
@@ -450,7 +554,16 @@ export function SolucoesInteligentes() {
                   <Button variant="outline" className="flex-1">
                     Disponível a partir do {minimumPlanLabel}
                   </Button>
-                  <Button variant="ghost">Ver detalhes</Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      setSelectedSolution(solution)
+                    }}
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
                 </>
               )}
             </CardFooter>
@@ -641,8 +754,19 @@ export function SolucoesInteligentes() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex flex-grow-0 gap-2 pt-2">
-                      <Button className="flex-1">Ativar</Button>
-                      <Button variant="outline">Testar</Button>
+                      <Button variant="outline" className="flex-1">
+                        Disponível a partir do {getPlanLabel(minimumPlanBySolution.get(solution.id)?.code, plansByCode)}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(event) => {
+                          event.preventDefault()
+                          setSelectedSolution(solution)
+                        }}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
                     </CardFooter>
                   </Card>
                 </Link>
@@ -651,6 +775,37 @@ export function SolucoesInteligentes() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!selectedSolution} onOpenChange={(open) => !open && setSelectedSolution(null)}>
+        <DialogContent className="sm:max-w-[560px]">
+          {selectedSolution && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedSolution.name}</DialogTitle>
+                <DialogDescription>Resumo rapido da solucao e das regras de acesso.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4 text-sm">
+                <div className="rounded-md border p-4">
+                  <p><strong>Categoria:</strong> {selectedSolution.category || "Sem categoria"}</p>
+                  <p className="mt-2"><strong>Plano minimo:</strong> {getPlanLabel(minimumPlanBySolution.get(selectedSolution.id)?.code, plansByCode)}</p>
+                  <p className="mt-2"><strong>Ativacoes:</strong> {selectedSolution.activations || 0}</p>
+                </div>
+                <div className="rounded-md border p-4 text-muted-foreground">
+                  {selectedSolution.description || "Sem descricao"}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedSolution(null)}>
+                  Fechar
+                </Button>
+                <Button asChild>
+                  <Link href={`/solucao/${selectedSolution.id}`}>Abrir pagina da solucao</Link>
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
