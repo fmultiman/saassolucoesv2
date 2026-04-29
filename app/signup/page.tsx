@@ -2,22 +2,21 @@
 
 import type React from "react"
 import { useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon, CheckCircle2 } from "lucide-react"
 import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
-import { getAuthRedirectUrls, logAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { logAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 import { supabase } from "@/lib/supabase/client"
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
   const planParam = searchParams.get("plan")
-  // Só aceita os planos válidos
   const allowedPlans = ["gratuito", "essencial", "profissional", "completo"]
   const plan = allowedPlans.includes(planParam || "") ? planParam : "gratuito"
 
@@ -30,7 +29,6 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
 
-  // Calcular a força da senha quando ela mudar
   useEffect(() => {
     if (!password) {
       setPasswordStrength(0)
@@ -38,108 +36,75 @@ export default function SignupPage() {
     }
 
     let strength = 0
-
-    // Comprimento mínimo
     if (password.length >= 8) strength += 1
-
-    // Letras minúsculas
     if (/[a-z]/.test(password)) strength += 1
-
-    // Letras maiúsculas
     if (/[A-Z]/.test(password)) strength += 1
-
-    // Números
     if (/[0-9]/.test(password)) strength += 1
-
-    // Caracteres especiais
     if (/[^a-zA-Z0-9]/.test(password)) strength += 1
 
     setPasswordStrength(strength)
   }, [password])
 
-  /**
-   * Handles the signup form submission.
-   * @param e The form event.
-   */
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSignup = async (event: React.FormEvent) => {
+    event.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
-      // Validações básicas
       if (password !== confirmPassword) {
-        throw new Error("As senhas não coincidem")
+        throw new Error("As senhas nao coincidem")
       }
 
       if (password.length < 8) {
         throw new Error("A senha deve ter pelo menos 8 caracteres")
       }
 
-      // Nova verificação de email via endpoint seguro (checa tabela users e auth)
-      const checkRes = await fetch("/api/users/check-email", {
+      const checkResponse = await fetch("/api/users/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      const checkJson = await checkRes.json()
-      if (checkJson.exists) {
-        throw new Error("Este email já está em uso")
+      const checkPayload = await checkResponse.json()
+
+      if (checkPayload.exists) {
+        throw new Error("Este email ja esta em uso")
       }
 
-      // Obter URL de redirecionamento e logar para depuração
       const { emailRedirectTo } = logAuthRedirectUrls()
-      console.log("URL de redirecionamento que será usada:", emailRedirectTo)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: emailRedirectTo,
+          emailRedirectTo,
           data: {
-            name: name,
-            plan: plan,
+            name,
+            plan,
+            user_type: "client",
           },
         },
       })
 
       if (signUpError) {
-        const msg = signUpError.message?.toLowerCase() || ""
+        const message = signUpError.message?.toLowerCase() || ""
         if (
-          msg.includes("already registered") ||
-          msg.includes("already exists") ||
-          msg.includes("user already registered") ||
+          message.includes("already registered") ||
+          message.includes("already exists") ||
+          message.includes("user already registered") ||
           signUpError.status === 400
         ) {
-          throw new Error("Este email já está em uso")
+          throw new Error("Este email ja esta em uso")
         }
+
         throw signUpError
       }
 
       if (!data?.user) {
-        throw new Error("Erro ao criar usuário")
-      }
-
-      // Chamar endpoint seguro para inserir tipo de usuário
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome: name,
-          email: email,
-          tipoAcesso: "client",
-          plano: plan,
-        }),
-      })
-      const resJson = await res.json()
-      if (!res.ok) {
-        console.error("Erro ao inserir tipo de usuário:", resJson)
-        // Não bloquear o cadastro se falhar a inserção do tipo
+        throw new Error("Erro ao criar usuario")
       }
 
       setSuccess(true)
-    } catch (err: any) {
-      console.error("Erro ao fazer cadastro:", err)
-      setError(err.message || "Ocorreu um erro ao fazer o cadastro")
+    } catch (signupError) {
+      setError(signupError instanceof Error ? signupError.message : "Ocorreu um erro ao fazer o cadastro")
     } finally {
       setLoading(false)
     }
@@ -175,10 +140,10 @@ export default function SignupPage() {
               <Alert className="bg-green-500/10 text-green-500 border-green-500/20">
                 <AlertDescription>
                   <p>
-                    Enviamos um email de confirmação para <strong>{email}</strong>.
+                    Enviamos um email de confirmacao para <strong>{email}</strong>.
                   </p>
                   <p className="text-sm mt-2">
-                    Por favor, verifique sua caixa de entrada e clique no link de confirmação para ativar sua conta.
+                    Por favor, verifique sua caixa de entrada e clique no link de confirmacao para ativar sua conta.
                   </p>
                 </AlertDescription>
               </Alert>
@@ -187,36 +152,15 @@ export default function SignupPage() {
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
+                <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={(event) => setName(event.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="******"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <Input id="password" type="password" placeholder="******" value={password} onChange={(event) => setPassword(event.target.value)} required />
                 <PasswordStrengthIndicator strength={passwordStrength} />
               </div>
               <div className="space-y-2">
@@ -226,7 +170,7 @@ export default function SignupPage() {
                   type="password"
                   placeholder="******"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   required
                 />
               </div>
@@ -245,9 +189,9 @@ export default function SignupPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Já tem uma conta?{" "}
+            Ja tem uma conta?{" "}
             <Link href="/login" className="text-primary hover:underline">
-              Faça login
+              Faca login
             </Link>
           </p>
         </CardFooter>

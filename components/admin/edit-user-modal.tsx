@@ -90,10 +90,10 @@ export function EditUserModal({ open, onOpenChange, user, onUserUpdated }: EditU
     event.preventDefault()
     if (!user) return
 
-    setIsLoading(true)
+      setIsLoading(true)
     try {
-      const response = await fetch(`/api/admin/users/${user.id}/profile`, {
-        method: "PUT",
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },

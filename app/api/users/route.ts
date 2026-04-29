@@ -1,143 +1,194 @@
 import { NextResponse } from "next/server"
-import { createServiceRoleClient } from "@/lib/supabase/service-role"
-import { getCurrentApiUser } from "@/lib/api-auth"
+import { z } from "zod"
+import { requireAdmin } from "@/lib/auth/requireAdmin"
+import { requireUser } from "@/lib/auth/requireUser"
 import { resolvePlanFromDatabase } from "@/lib/plan-utils"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { apiErrorResponse, badRequestError, forbiddenError, logApiError, notFoundError } from "@/lib/errors"
+import { syncAuthUserRecord, userExists } from "@/lib/users"
 
-export async function POST(request: Request) {
+const createUserSchema = z.object({
+  nome: z.string().min(2).max(100),
+  email: z.string().email(),
+  tipoAcesso: z.enum(["admin", "client"]).default("client"),
+  plano: z.string().min(1).default("gratuito"),
+  forceCreate: z.boolean().optional().default(false),
+})
+
+const updateUserSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(2).max(100).optional(),
+  onboarding_completed: z.boolean().optional(),
+  status: z.enum(["active", "inactive", "suspended"]).optional(),
+  plan: z.string().min(1).optional(),
+})
+
+export async function GET() {
   try {
-    const supabaseAdmin = createServiceRoleClient()
+    await requireAdmin()
 
-    const { nome, email, tipoAcesso, plano, forceCreate } = await request.json()
-    const { user, userType: requesterType } = await getCurrentApiUser()
-
-    if (!nome || !email) {
-      return NextResponse.json({ error: "Nome e email são obrigatórios" }, { status: 400 })
-    }
-
-    const normalizedEmail = email.trim().toLowerCase()
-    const isAdminRequest = requesterType === "admin"
-
-    if (!isAdminRequest) {
-      if (!user || user.email?.toLowerCase() !== normalizedEmail || tipoAcesso === "admin" || forceCreate) {
-        return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
-      }
-    }
-
-    const userType = isAdminRequest && tipoAcesso === "admin" ? "admin" : "client"
-    const resolvedPlan = await resolvePlanFromDatabase(plano)
-    const userPlan = userType === "client" ? resolvedPlan.code : DEFAULT_ADMIN_PLAN
-
-    // 🔍 Verificar se já existe na tabela users
-    const { data: userInTable, error: tableError } = await supabaseAdmin
+    const supabase = createServiceRoleClient()
+    const { data, error } = await supabase
       .from("users")
-      .select("id")
-      .eq("email", normalizedEmail)
-      .maybeSingle()
+      .select("id, email, name, user_type, plan, plan_id, onboarding_completed, status, created_at, updated_at, last_sign_in_at")
+      .order("created_at", { ascending: false })
 
-    if (tableError) throw tableError
-
-    // 🔍 Verificar se já existe no auth
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
-    if (authError) throw authError
-
-    const existingAuthUser = authUsers?.users?.find((user) => user.email?.toLowerCase() === normalizedEmail)
-
-    if ((userInTable || existingAuthUser) && !(isAdminRequest && forceCreate)) {
-      return NextResponse.json({ error: "Usuário com este email já existe" }, { status: 400 })
+    if (error) {
+      throw error
     }
 
-    let userId = existingAuthUser?.id
-
-    // 👤 Criar no auth se não existir
-    if (!existingAuthUser) {
-      const password = generateTemporaryPassword()
-
-      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: normalizedEmail,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          name: nome,
-          tipo: userType,
-          plano: userType === "client" ? userPlan : null,
-          plan_id: userType === "client" ? resolvedPlan.id : null,
-        },
-      })
-
-      if (createError || !created?.user?.id) {
-        return NextResponse.json({ error: createError?.message || "Erro ao criar usuário no auth" }, { status: 500 })
-      }
-
-      userId = created.user.id
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: "Nao foi possivel identificar o usuario" }, { status: 500 })
-    }
-
-    // 🔄 Atualizar ou inserir na tabela users
-    const { data: existing, error: findUserError } = await supabaseAdmin
-      .from("users")
-      .select("id")
-      .eq("id", userId)
-      .maybeSingle()
-
-    if (findUserError) throw findUserError
-
-    if (existing) {
-      // Atualizar
-      const { error: updateError } = await supabaseAdmin
-        .from("users")
-        .update({
-          name: nome,
-          email: normalizedEmail,
-          user_type: userType,
-          plan: userPlan,
-          plan_id: userType === "client" ? resolvedPlan.id : null,
-          status: "active",
-        })
-        .eq("id", userId)
-
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
-      }
-
-      return NextResponse.json({
-        message: "Usuário atualizado com sucesso",
-        userId,
-        action: "updated",
-      })
-    } else {
-      // Inserir
-      const { error: insertError } = await supabaseAdmin.from("users").insert({
-        id: userId,
-        name: nome,
-        email: normalizedEmail,
-        user_type: userType,
-        plan: userPlan,
-        plan_id: userType === "client" ? resolvedPlan.id : null,
-        status: "active",
-      })
-
-      if (insertError) {
-        return NextResponse.json({ error: insertError.message }, { status: 500 })
-      }
-
-      return NextResponse.json({
-        message: "Usuário criado com sucesso",
-        userId,
-        action: "created",
-      })
-    }
-  } catch (err: any) {
-    console.error("Erro geral:", err)
-    return NextResponse.json({ error: err.message || "Erro inesperado" }, { status: 500 })
+    return NextResponse.json(data ?? [])
+  } catch (error) {
+    return apiErrorResponse(error)
   }
 }
 
-const DEFAULT_ADMIN_PLAN = "free"
+export async function POST(request: Request) {
+  try {
+    const payload = createUserSchema.parse(await request.json())
+    const currentUser = await requireUser()
+    const normalizedEmail = payload.email.trim().toLowerCase()
+    const isAdmin = currentUser.user.user_type === "admin"
 
-function generateTemporaryPassword(length = 12) {
+    if (!isAdmin) {
+      if (currentUser.authUser.email?.toLowerCase() !== normalizedEmail || payload.tipoAcesso === "admin" || payload.forceCreate) {
+        throw forbiddenError()
+      }
+
+      const synced = await syncAuthUserRecord(currentUser.authUser, {
+        name: payload.nome,
+        plan: payload.plano,
+        userType: "client",
+      })
+
+      return NextResponse.json({ message: "Perfil sincronizado com sucesso", userId: synced.user.id, action: "synced" })
+    }
+
+    if ((await userExists(normalizedEmail)) && !payload.forceCreate) {
+      throw badRequestError("Usuario com este email ja existe")
+    }
+
+    const supabase = createServiceRoleClient()
+    const temporaryPassword = generateTemporaryPassword()
+
+    const { data: createdUser, error: authError } = await supabase.auth.admin.createUser({
+      email: normalizedEmail,
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: {
+        name: payload.nome,
+      },
+    })
+
+    if (authError || !createdUser.user) {
+      throw authError ?? new Error("Erro ao criar usuario no auth")
+    }
+
+    const synced = await syncAuthUserRecord(createdUser.user, {
+      name: payload.nome,
+      userType: payload.tipoAcesso,
+      plan: payload.tipoAcesso === "client" ? payload.plano : "gratuito",
+      status: "active",
+    })
+
+    return NextResponse.json(
+      {
+        message: "Usuario criado com sucesso",
+        userId: synced.user.id,
+        action: "created",
+      },
+      { status: 201 },
+    )
+  } catch (error) {
+    logApiError("api/users POST", error)
+    return apiErrorResponse(error)
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const currentUser = await requireUser()
+    const payload = updateUserSchema.parse(await request.json())
+    const targetUserId = payload.id ?? currentUser.user.id
+    const isAdmin = currentUser.user.user_type === "admin"
+
+    if (!isAdmin && targetUserId !== currentUser.user.id) {
+      throw forbiddenError()
+    }
+
+    const updateData: Record<string, unknown> = {}
+
+    if (payload.name !== undefined) {
+      updateData.name = payload.name
+    }
+
+    if (payload.onboarding_completed !== undefined) {
+      updateData.onboarding_completed = payload.onboarding_completed
+    }
+
+    if (isAdmin && payload.status !== undefined) {
+      updateData.status = payload.status
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw badRequestError("Nenhum campo valido foi informado para atualizacao")
+    }
+
+    const supabase = createServiceRoleClient()
+
+    const { data: existingUser, error: existingUserError } = await supabase.from("users").select("*").eq("id", targetUserId).maybeSingle()
+    if (existingUserError) {
+      throw existingUserError
+    }
+    if (!existingUser) {
+      throw notFoundError("Usuario nao encontrado")
+    }
+
+    if (isAdmin && payload.plan !== undefined) {
+      const resolvedPlan = await resolvePlanFromDatabase(payload.plan)
+      updateData.plan = resolvedPlan.code
+      updateData.plan_id = resolvedPlan.id
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", targetUserId)
+      .select("id, email, name, user_type, plan, plan_id, onboarding_completed, status, created_at, updated_at, last_sign_in_at")
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    if (payload.name !== undefined) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: targetUserId,
+            name: payload.name,
+            email: existingUser.email,
+          },
+          { onConflict: "id" },
+        )
+
+      if (profileError) {
+        throw profileError
+      }
+    }
+
+    return NextResponse.json(data)
+  } catch (error) {
+    logApiError("api/users PATCH", error)
+    return apiErrorResponse(error)
+  }
+}
+
+function generateTemporaryPassword(length = 16) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%*"
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
 }

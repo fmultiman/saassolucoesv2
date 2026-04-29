@@ -22,6 +22,7 @@ type UserRow = {
   status: string | null
   plan: string | null
   plan_id: number | null
+  onboarding_completed: boolean | null
   user_type: string | null
   last_sign_in_at: string | null
   name: string | null

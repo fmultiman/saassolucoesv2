@@ -1,20 +1,23 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CuboidIcon } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+type CurrentProfileResponse = {
+  user?: {
+    user_type?: string | null
+  }
+}
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -23,92 +26,73 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [resetSent, setResetSent] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
-      console.log("Iniciando login com email:", email)
-
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        console.error("Erro na API de autenticação:", error)
-        throw error
+      if (signInError) {
+        throw signInError
       }
 
       if (!data?.session) {
-        throw new Error("Não foi possível iniciar a sessão")
+        throw new Error("Nao foi possivel iniciar a sessao")
       }
 
-      // Verificar o tipo de usuário
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("user_type")
-        .eq("id", data.session.user.id)
-        .single()
+      const profileResponse = await fetch("/api/user/profile", {
+        method: "GET",
+        cache: "no-store",
+      })
+      const profilePayload = (await profileResponse.json().catch(() => null)) as CurrentProfileResponse | null
 
-      if (userError) {
-        console.error("Erro ao verificar tipo de usuário:", userError)
-        // Fallback para dashboard de cliente se não conseguir verificar
-        window.location.href = "/dashboard"
-        return
+      if (!profileResponse.ok || !profilePayload?.user?.user_type) {
+        throw new Error("Nao foi possivel carregar o perfil do usuario")
       }
 
-      console.log("Login bem-sucedido, tipo de usuário:", userData?.user_type)
+      window.location.href = profilePayload.user.user_type === "admin" ? "/admin" : "/dashboard"
+    } catch (loginError) {
+      const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro ao fazer login."
 
-      // Redirecionar com base no tipo de usuário usando window.location para forçar refresh completo
-      if (userData?.user_type === "admin") {
-        console.log("Redirecionando para /admin")
-        window.location.href = "/admin"
-      } else {
-        console.log("Redirecionando para /dashboard")
-        window.location.href = "/dashboard"
-      }
-    } catch (err: any) {
-      console.error("Erro ao fazer login:", err)
-
-      // Mensagens de erro mais amigáveis
-      if (err.message?.includes("Invalid login credentials")) {
+      if (message.includes("Invalid login credentials")) {
         setError("Email ou senha incorretos. Por favor, verifique suas credenciais.")
-      } else if (err.message?.includes("Email not confirmed")) {
-        setError("Email não confirmado. Por favor, verifique sua caixa de entrada.")
+      } else if (message.includes("Email not confirmed")) {
+        setError("Email nao confirmado. Por favor, verifique sua caixa de entrada.")
       } else {
-        setError(err.message || "Ocorreu um erro ao fazer login. Por favor, tente novamente.")
+        setError(message)
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
       if (!resetEmail || !resetEmail.includes("@")) {
-        setError("Por favor, insira um email válido.")
-        setLoading(false)
+        setError("Por favor, insira um email valido.")
         return
       }
 
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       })
 
-      if (error) {
-        throw error
+      if (resetError) {
+        throw resetError
       }
 
       setResetSent(true)
-    } catch (err: any) {
-      console.error("Erro ao enviar email de recuperação:", err)
-      setError(err.message || "Ocorreu um erro ao enviar o email de recuperação.")
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : "Ocorreu um erro ao enviar o email de recuperacao.")
     } finally {
       setLoading(false)
     }
@@ -124,7 +108,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Faça login para acessar sua conta</CardDescription>
+          <CardDescription>Faca login para acessar sua conta</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
@@ -137,14 +121,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
@@ -153,7 +130,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="******"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
                 />
               </div>
@@ -173,7 +150,7 @@ export default function LoginPage() {
               {resetSent ? (
                 <Alert className="bg-green-500/10 text-green-500 border-green-500/20">
                   <AlertDescription>
-                    <p>Email de recuperação enviado!</p>
+                    <p>Email de recuperacao enviado!</p>
                     <p className="text-sm mt-2">Verifique sua caixa de entrada.</p>
                   </AlertDescription>
                 </Alert>
@@ -186,7 +163,7 @@ export default function LoginPage() {
                       type="email"
                       placeholder="seu@email.com"
                       value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
+                      onChange={(event) => setResetEmail(event.target.value)}
                       required
                     />
                   </div>
@@ -197,7 +174,7 @@ export default function LoginPage() {
                         Enviando...
                       </>
                     ) : (
-                      "Enviar link de recuperação"
+                      "Enviar link de recuperacao"
                     )}
                   </Button>
                 </form>
@@ -230,7 +207,7 @@ export default function LoginPage() {
             </Button>
           )}
           <p className="text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
+            Nao tem uma conta?{" "}
             <Link href="/signup" className="text-primary hover:underline">
               Cadastre-se
             </Link>

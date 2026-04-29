@@ -1,33 +1,32 @@
-import { createServiceRoleClient } from "@/lib/supabase/service-role"
-import { requireSelfOrAdminApiUser } from "@/lib/api-auth"
 import { NextResponse } from "next/server"
+import { requireSelfOrAdminApiUser } from "@/lib/api-auth"
+import { apiErrorResponse, logApiError, notFoundError } from "@/lib/errors"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const authError = await requireSelfOrAdminApiUser(id)
   if (authError) return authError
 
   try {
     const supabase = createServiceRoleClient()
-
     const { data, error } = await supabase
       .from("users")
-      .select("id, email, name, plan, plan_id, created_at, updated_at")
+      .select("id, email, name, user_type, status, plan, plan_id, onboarding_completed, created_at, updated_at, last_sign_in_at")
       .eq("id", id)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      console.error("Erro ao buscar usuário:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw error
     }
 
     if (!data) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+      throw notFoundError("Usuario nao encontrado")
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("Exceção ao buscar usuário:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    logApiError("api/users/[id] GET", error)
+    return apiErrorResponse(error)
   }
 }

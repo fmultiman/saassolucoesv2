@@ -1,32 +1,35 @@
 "use client"
 
-// 🔐 Página de autenticação — usa nova instância Supabase
-
 import type React from "react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Loader2, CuboidIcon } from "lucide-react"
+import { supabase } from "@/lib/supabase/client"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Loader2, CuboidIcon } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import Link from "next/link"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { supabase } from "@/lib/supabase/client"
 
 const formSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(1, "A senha é obrigatória"),
+  email: z.string().email("Email invalido"),
+  password: z.string().min(1, "A senha e obrigatoria"),
 })
+
+type CurrentProfileResponse = {
+  user?: {
+    user_type?: string | null
+  }
+}
 
 export default function AdminLoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo") || "/admin"
-
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
@@ -35,23 +38,14 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession()
-        if (error) {
-          console.error("Erro ao verificar sessão:", error)
-          return
-        }
-        if (data.session) {
-          console.log("Sessão encontrada, redirecionando...")
-          router.push(redirectTo)
-        }
-      } catch (err) {
-        console.error("Erro ao verificar sessão:", err)
+      const { data, error: sessionError } = await supabase.auth.getSession()
+      if (!sessionError && data.session) {
+        router.push(redirectTo)
       }
     }
 
-    checkSession()
-  }, [router, redirectTo])
+    void checkSession()
+  }, [redirectTo, router])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,53 +62,48 @@ export default function AdminLoginPage() {
     setError(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       })
 
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          setError("Credenciais inválidas. Verifique seu email e senha.")
-        } else if (error.message.includes("Email not confirmed")) {
-          setError("Email não confirmado. Por favor, verifique sua caixa de entrada.")
-        } else {
-          setError(`Erro ao fazer login: ${error.message}`)
-        }
-        setIsLoading(false)
-        return
+      if (signInError) {
+        throw signInError
       }
 
       if (!data.session) {
-        setError("Não foi possível iniciar a sessão. Tente novamente.")
-        setIsLoading(false)
-        return
+        throw new Error("Nao foi possivel iniciar a sessao")
       }
 
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("user_type")
-        .eq("id", data.session.user.id)
-        .single()
+      const profileResponse = await fetch("/api/user/profile", {
+        method: "GET",
+        cache: "no-store",
+      })
+      const profilePayload = (await profileResponse.json().catch(() => null)) as CurrentProfileResponse | null
 
-      if (userError || userData?.user_type !== "admin") {
-        setError("Você não tem permissão para acessar o painel administrativo.")
+      if (!profileResponse.ok || profilePayload?.user?.user_type !== "admin") {
         await supabase.auth.signOut()
-        setIsLoading(false)
-        return
+        throw new Error("Voce nao tem permissao para acessar o painel administrativo.")
       }
 
       window.location.href = redirectTo
-    } catch (error: any) {
-      setError("Ocorreu um erro inesperado. Tente novamente mais tarde.")
-      console.error("Erro inesperado ao fazer login:", error)
+    } catch (loginError) {
+      const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro inesperado."
+
+      if (message.includes("Invalid login credentials")) {
+        setError("Credenciais invalidas. Verifique seu email e senha.")
+      } else if (message.includes("Email not confirmed")) {
+        setError("Email nao confirmado. Por favor, verifique sua caixa de entrada.")
+      } else {
+        setError(message)
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault()
     if (isLoading) return
 
     setIsLoading(true)
@@ -122,24 +111,21 @@ export default function AdminLoginPage() {
 
     try {
       if (!resetEmail || !resetEmail.includes("@")) {
-        setError("Por favor, insira um email válido.")
-        setIsLoading(false)
+        setError("Por favor, insira um email valido.")
         return
       }
 
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/admin/reset-password`,
       })
 
-      if (error) {
-        setError(`Erro ao enviar email de recuperação: ${error.message}`)
-        setIsLoading(false)
-        return
+      if (resetError) {
+        throw resetError
       }
 
       setResetSent(true)
-    } catch (error: any) {
-      setError("Ocorreu um erro ao enviar o email de recuperação.")
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : "Ocorreu um erro ao enviar o email de recuperacao.")
     } finally {
       setIsLoading(false)
     }
@@ -155,7 +141,7 @@ export default function AdminLoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl">Login Administrativo</CardTitle>
-          <CardDescription>Faça login para acessar o painel administrativo</CardDescription>
+          <CardDescription>Faca login para acessar o painel administrativo</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -213,7 +199,7 @@ export default function AdminLoginPage() {
               {resetSent ? (
                 <Alert className="bg-green-500/10 text-green-500 border-green-500/20">
                   <AlertDescription>
-                    <p>Email de recuperação enviado!</p>
+                    <p>Email de recuperacao enviado!</p>
                     <p className="text-sm mt-2">Verifique sua caixa de entrada.</p>
                   </AlertDescription>
                 </Alert>
@@ -228,7 +214,7 @@ export default function AdminLoginPage() {
                       type="email"
                       placeholder="seu@email.com"
                       value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
+                      onChange={(event) => setResetEmail(event.target.value)}
                       required
                     />
                   </div>
@@ -239,7 +225,7 @@ export default function AdminLoginPage() {
                         Enviando...
                       </>
                     ) : (
-                      "Enviar link de recuperação"
+                      "Enviar link de recuperacao"
                     )}
                   </Button>
                 </form>

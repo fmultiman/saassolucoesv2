@@ -10,25 +10,25 @@ export default function OnboardingPage() {
 
   const handleOnboardingComplete = async () => {
     try {
-      // Aqui você pode salvar os dados do onboarding no banco de dados
-      // Por exemplo, usando uma chamada de API
+      const response = await fetch("/api/users", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ onboarding_completed: true }),
+      })
 
-      // Exemplo simples:
-      // await fetch('/api/user/onboarding', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ completed: true })
-      // })
+      if (!response.ok) {
+        throw new Error("Nao foi possivel concluir o onboarding")
+      }
 
       toast({
-        title: "Onboarding concluído",
+        title: "Onboarding concluido",
         description: "Sua conta foi configurada com sucesso!",
       })
 
-      // Redirecionar para o dashboard
       router.push("/dashboard")
-    } catch (error) {
-      console.error("Erro ao salvar dados de onboarding:", error)
+    } catch (_error) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao finalizar o onboarding. Tente novamente.",

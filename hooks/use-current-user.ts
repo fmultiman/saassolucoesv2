@@ -1,13 +1,22 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { useCallback, useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/types"
+import { supabase } from "@/lib/supabase/client"
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
+type PublicUserRow = Database["public"]["Tables"]["users"]["Row"]
 
 type UserWithProfile = User & {
   user_type?: string
-  profile?: Database["public"]["Tables"]["profiles"]["Row"] | null
+  profile?: ProfileRow | null
+  account?: PublicUserRow | null
+}
+
+type CurrentProfileResponse = {
+  user: PublicUserRow
+  profile: ProfileRow | null
 }
 
 export function useCurrentUser() {
@@ -15,40 +24,55 @@ export function useCurrentUser() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  // 🔄 Atualizar perfil manualmente
+  const loadCurrentUserFromApi = useCallback(async (authUser: User) => {
+    const response = await fetch("/api/user/profile", {
+      method: "GET",
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ao carregar perfil: ${response.status}`)
+    }
+
+    const payload = (await response.json()) as CurrentProfileResponse
+
+    setUser({
+      ...authUser,
+      user_type: payload.user.user_type || undefined,
+      profile: payload.profile || null,
+      account: payload.user,
+    })
+  }, [])
+
   const refreshProfile = useCallback(async () => {
     if (!user) return
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
+    await loadCurrentUserFromApi(user)
+  }, [loadCurrentUserFromApi, user])
 
-    if (!profileError) {
-      setUser((prev) =>
-        prev ? { ...prev, profile: profileData || null } : prev
-      )
-    }
-  }, [user])
-
-  // ✅ Atualizar dados do perfil
   const updateProfile = useCallback(
     async (data: Partial<Database["public"]["Tables"]["profiles"]["Update"]>) => {
-      if (!user) return { error: new Error("Usuário não encontrado") }
+      if (!user) return { error: new Error("Usuario nao encontrado") }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(data)
-        .eq("id", user.id)
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
 
-      if (error) return { error }
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        return { error: new Error(payload?.error || "Erro ao atualizar perfil") }
+      }
+
       await refreshProfile()
       return { success: true }
     },
-    [user, refreshProfile]
+    [refreshProfile, user],
   )
 
-  // 🔐 Verifica se a sessão ainda está válida
   const checkSession = useCallback(async () => {
     const {
       data: { session },
@@ -58,7 +82,6 @@ export function useCurrentUser() {
     return !!session && !error
   }, [])
 
-  // ♻️ Tenta renovar a sessão
   const refreshSession = useCallback(async () => {
     const {
       data: { session },
@@ -68,10 +91,11 @@ export function useCurrentUser() {
     return !!session && !error
   }, [])
 
-  // 🔄 Carregar dados do usuário e perfil
   const fetchUser = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
+
       const {
         data: { session },
         error: sessionError,
@@ -83,43 +107,26 @@ export function useCurrentUser() {
         return
       }
 
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("user_type")
-        .eq("id", session.user.id)
-        .single()
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single()
-
-      const enhancedUser: UserWithProfile = {
-        ...session.user,
-        user_type: userData?.user_type || undefined,
-        profile: profileData || null,
-      }
-
-      setUser(enhancedUser)
-    } catch (err) {
-      console.error("Erro ao buscar usuário:", err)
-      setError(err instanceof Error ? err : new Error(String(err)))
+      await loadCurrentUserFromApi(session.user)
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError : new Error(String(fetchError)))
       setUser(null)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [loadCurrentUserFromApi])
 
-  // Carregar ao montar
   useEffect(() => {
-    fetchUser()
+    void fetchUser()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) fetchUser()
-      else setUser(null)
+      if (session) {
+        void fetchUser()
+      } else {
+        setUser(null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -130,6 +137,7 @@ export function useCurrentUser() {
     id: user?.id,
     roles: user?.user_type ? [user.user_type] : [],
     profile: user?.profile || null,
+    account: user?.account || null,
     loading,
     error,
     updateProfile,

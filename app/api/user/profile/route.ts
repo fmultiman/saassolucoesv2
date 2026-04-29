@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
 import { z } from "zod"
+import { requireUser } from "@/lib/auth/requireUser"
+import { apiErrorResponse, logApiError } from "@/lib/errors"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
 
-// Schema de validação para atualização de perfil
 const profileUpdateSchema = z
   .object({
-    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(100).nullable().optional(),
+    name: z.string().min(2).max(100).nullable().optional(),
     bio: z.string().max(500).nullable().optional(),
     phone: z.string().max(20).nullable().optional(),
     job_title: z.string().max(100).nullable().optional(),
@@ -27,121 +27,87 @@ const profileUpdateSchema = z
   })
   .partial()
 
-export async function PUT(request: Request) {
+export async function GET() {
   try {
-    const cookiesStore = await cookies()
-    const supabase = createServerClient(cookiesStore)
+    const currentUser = await requireUser()
 
-    // Verificar autenticação
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    // Obter dados do corpo da requisição
-    const body = await request.json()
-    console.log("Dados recebidos para atualização:", body)
-
-    // Validar dados
-    const validationResult = profileUpdateSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      console.error("Erro de validação:", validationResult.error.format())
-      return NextResponse.json({ error: "Dados inválidos", details: validationResult.error.format() }, { status: 400 })
-    }
-
-    const validData = validationResult.data
-    console.log("Dados validados:", validData)
-
-    // Remover campos undefined ou null antes de atualizar
-    const cleanData = Object.fromEntries(Object.entries(validData).filter(([_, v]) => v !== undefined))
-
-    // Adicionar updated_at
-    const dataToUpdate = {
-      ...cleanData,
-      updated_at: new Date().toISOString(),
-    }
-
-    // Verificar se o perfil já existe
-    const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", session.user.id).single()
-
-    if (existingProfile) {
-      // Atualizar perfil existente
-      const { error } = await supabase.from("profiles").update(dataToUpdate).eq("id", session.user.id)
-
-      if (error) {
-        console.error("Erro ao atualizar perfil:", error)
-        return NextResponse.json({ error: "Erro ao atualizar perfil", details: error }, { status: 500 })
-      }
-    } else {
-      // Criar novo perfil
-      const { error } = await supabase.from("profiles").insert({
-        id: session.user.id,
-        ...dataToUpdate,
-        created_at: new Date().toISOString(),
-      })
-
-      if (error) {
-        console.error("Erro ao criar perfil:", error)
-        return NextResponse.json({ error: "Erro ao criar perfil", details: error }, { status: 500 })
-      }
-    }
-
-    console.log("Perfil atualizado com sucesso")
-    return NextResponse.json({ success: true, message: "Perfil atualizado com sucesso" })
+    return NextResponse.json({
+      user: currentUser.user,
+      profile: currentUser.profile,
+    })
   } catch (error) {
-    console.error("Erro ao processar requisição:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    logApiError("api/user/profile GET", error)
+    return apiErrorResponse(error)
   }
 }
 
-export async function GET(request: Request) {
+export async function PUT(request: Request) {
   try {
-    const cookiesStore = await cookies()
-    const supabase = createServerClient(cookiesStore)
+    const currentUser = await requireUser()
+    const profileData = profileUpdateSchema.parse(await request.json())
+    const supabase = createServiceRoleClient()
 
-    // Verificar autenticação
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    const cleanedProfileData = Object.fromEntries(Object.entries(profileData).filter(([, value]) => value !== undefined))
 
-    if (!session) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: currentUser.user.id,
+          email: currentUser.user.email,
+          ...(profileData.name !== undefined ? { name: profileData.name } : {}),
+          ...cleanedProfileData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      )
+
+    if (profileError) {
+      throw profileError
     }
 
-    // Buscar dados do usuário
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", session.user.id)
-      .single()
+    if (profileData.name !== undefined) {
+      const { error: userError } = await supabase
+        .from("users")
+        .update({
+          name: profileData.name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentUser.user.id)
 
-    if (userError) {
-      console.error("Erro ao buscar usuário:", userError)
-      return NextResponse.json({ error: "Erro ao buscar usuário", details: userError }, { status: 500 })
+      if (userError) {
+        throw userError
+      }
     }
 
-    // Buscar dados do perfil
-    const { data: profileData, error: profileError } = await supabase
+    const { data: refreshedProfile, error: refreshedProfileError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", session.user.id)
+      .eq("id", currentUser.user.id)
+      .maybeSingle()
+
+    if (refreshedProfileError) {
+      throw refreshedProfileError
+    }
+
+    const { data: refreshedUser, error: refreshedUserError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", currentUser.user.id)
       .single()
 
-    if (profileError && profileError.code !== "PGRST116") {
-      console.error("Erro ao buscar perfil:", profileError)
-      return NextResponse.json({ error: "Erro ao buscar perfil", details: profileError }, { status: 500 })
+    if (refreshedUserError) {
+      throw refreshedUserError
     }
 
     return NextResponse.json({
-      user: userData,
-      profile: profileData || null,
+      success: true,
+      message: "Perfil atualizado com sucesso",
+      user: refreshedUser,
+      profile: refreshedProfile ?? null,
     })
   } catch (error) {
-    console.error("Erro ao processar requisição:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    logApiError("api/user/profile PUT", error)
+    return apiErrorResponse(error)
   }
 }
