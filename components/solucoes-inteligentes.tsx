@@ -1,55 +1,54 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import {
-  MessageSquare,
-  Calendar,
-  ThumbsUp,
-  Users,
-  Bot,
-  Zap,
-  Mail,
-  ChevronRight,
-  Heart,
-  Megaphone,
-  Share2,
-  Briefcase,
-  Plus,
-  Search,
-  Filter,
-  ShoppingCart,
-  UserCheck,
-  Gift,
-  FileText,
-  CheckSquare,
+  AlertCircle,
   Bell,
-  MessageCircle,
-  Instagram,
-  Phone,
-  Headphones,
-  Repeat,
-  Star,
-  Send,
+  Bot,
+  Briefcase,
+  Calendar,
   CalendarCheck,
   CalendarPlus,
-  Smile,
-  PenTool,
+  ChevronRight,
+  CheckSquare,
+  FileText,
+  Filter,
+  Gift,
+  Headphones,
+  Heart,
+  Instagram,
   Layers,
-  AlertCircle,
+  Mail,
+  Megaphone,
+  MessageCircle,
+  MessageSquare,
+  PenTool,
+  Phone,
+  Plus,
+  Repeat,
+  Search,
+  Send,
+  Share2,
+  ShoppingCart,
+  Smile,
+  Star,
+  ThumbsUp,
+  UserCheck,
+  Users,
+  Zap,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useCurrentUser } from "@/hooks/use-current-user"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-// Tipo para as soluções
 type Solution = {
   id: number
   name: string
@@ -70,64 +69,104 @@ type Categoria = {
   cor?: string
 }
 
+type PlanRecord = {
+  id: number
+  name: string
+  code: string | null
+  sort_order: number | null
+}
+
+type PlanSolutionRecord = {
+  plan_id: number | null
+  solution_id: number | null
+}
+
+const categorias: Categoria[] = [
+  { id: "todos", label: "Todos" },
+  { id: "atendimento", label: "Atendimento", icon: MessageSquare, cor: "bg-blue-500/10 text-blue-500" },
+  { id: "vendas", label: "Vendas", icon: ShoppingCart, cor: "bg-green-500/10 text-green-500" },
+  { id: "relacionamento", label: "Relacionamento", icon: Heart, cor: "bg-pink-500/10 text-pink-500" },
+  { id: "agendamento", label: "Agendamento", icon: Calendar, cor: "bg-purple-500/10 text-purple-500" },
+  { id: "feedback", label: "Feedback", icon: ThumbsUp, cor: "bg-orange-500/10 text-orange-500" },
+  { id: "marketing", label: "Marketing", icon: Megaphone, cor: "bg-red-500/10 text-red-500" },
+  { id: "redes-sociais", label: "Redes Sociais", icon: Share2, cor: "bg-indigo-500/10 text-indigo-500" },
+  { id: "administracao", label: "Administração", icon: Briefcase, cor: "bg-slate-500/10 text-slate-500" },
+]
+
+const iconMap: Record<string, LucideIcon> = {
+  MessageSquare,
+  Calendar,
+  ThumbsUp,
+  Users,
+  Bot,
+  Zap,
+  Mail,
+  Heart,
+  Megaphone,
+  Share2,
+  Briefcase,
+  ShoppingCart,
+  UserCheck,
+  Gift,
+  FileText,
+  CheckSquare,
+  Bell,
+  MessageCircle,
+  Instagram,
+  Phone,
+  Headphones,
+  Repeat,
+  Star,
+  Send,
+  CalendarCheck,
+  CalendarPlus,
+  Smile,
+  PenTool,
+  Layers,
+  AlertCircle,
+}
+
+const fallbackPlanOrder: Record<string, number> = {
+  gratuito: 0,
+  free: 0,
+  essencial: 1,
+  basic: 1,
+  profissional: 2,
+  pro: 2,
+  completo: 3,
+  enterprise: 3,
+}
+
+function normalizePlanCode(value?: string | null) {
+  if (!value) return null
+  return value.toLowerCase().trim()
+}
+
+function getCategoriaInfo(categoriaId?: string | null) {
+  return categorias.find((cat) => cat.id === categoriaId?.toLowerCase()) || categorias[0]
+}
+
+function getPlanLabel(code?: string | null, plansByCode?: Map<string, PlanRecord>) {
+  const normalizedCode = normalizePlanCode(code)
+  if (!normalizedCode) return "plano superior"
+  return plansByCode?.get(normalizedCode)?.name || normalizedCode.charAt(0).toUpperCase() + normalizedCode.slice(1)
+}
+
 export function SolucoesInteligentes() {
   const [activeTab, setActiveTab] = useState("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [visibleCategories, setVisibleCategories] = useState<Categoria[]>([])
   const [hiddenCategories, setHiddenCategories] = useState<Categoria[]>([])
   const [solutions, setSolutions] = useState<Solution[]>([])
+  const [userPlanId, setUserPlanId] = useState<number | null>(null)
+  const [userPlanCode, setUserPlanCode] = useState<string | null>(null)
+  const [plans, setPlans] = useState<PlanRecord[]>([])
+  const [planSolutions, setPlanSolutions] = useState<PlanSolutionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const tabsListRef = useRef<HTMLDivElement | null>(null)
   const { user, loading: userLoading } = useCurrentUser()
 
-  const categorias: Categoria[] = [
-    { id: "todos", label: "Todos" },
-    { id: "atendimento", label: "Atendimento", icon: MessageSquare, cor: "bg-blue-500/10 text-blue-500" },
-    { id: "vendas", label: "Vendas", icon: ShoppingCart, cor: "bg-green-500/10 text-green-500" },
-    { id: "relacionamento", label: "Relacionamento", icon: Heart, cor: "bg-pink-500/10 text-pink-500" },
-    { id: "agendamento", label: "Agendamento", icon: Calendar, cor: "bg-purple-500/10 text-purple-500" },
-    { id: "feedback", label: "Feedback", icon: ThumbsUp, cor: "bg-orange-500/10 text-orange-500" },
-    { id: "marketing", label: "Marketing", icon: Megaphone, cor: "bg-red-500/10 text-red-500" },
-    { id: "redes-sociais", label: "Redes Sociais", icon: Share2, cor: "bg-indigo-500/10 text-indigo-500" },
-    { id: "administracao", label: "Administração", icon: Briefcase, cor: "bg-slate-500/10 text-slate-500" },
-  ]
-
-  // Mapeamento de ícones por categoria
-  const iconMap: Record<string, LucideIcon> = {
-    MessageSquare,
-    Calendar,
-    ThumbsUp,
-    Users,
-    Bot,
-    Zap,
-    Mail,
-    Heart,
-    Megaphone,
-    Share2,
-    Briefcase,
-    ShoppingCart,
-    UserCheck,
-    Gift,
-    FileText,
-    CheckSquare,
-    Bell,
-    MessageCircle,
-    Instagram,
-    Phone,
-    Headphones,
-    Repeat,
-    Star,
-    Send,
-    CalendarCheck,
-    CalendarPlus,
-    Smile,
-    PenTool,
-    Layers,
-    AlertCircle,
-  }
-
-  // Carregar soluções do banco de dados
   useEffect(() => {
     const fetchSolutions = async () => {
       if (userLoading) return
@@ -136,32 +175,43 @@ export function SolucoesInteligentes() {
         setLoading(true)
         setError(null)
 
-        // Primeiro, buscar o plano do usuário atual
-        let planId = null
+        const [solutionsResponse, plansResponse, planSolutionsResponse, userResponse] = await Promise.all([
+          fetch("/api/solutions/active"),
+          fetch("/api/plans"),
+          fetch("/api/plan-solutions"),
+          user?.id ? fetch(`/api/users/${user.id}`) : Promise.resolve(null),
+        ])
 
-        if (user?.id) {
-          const userResponse = await fetch(`/api/users/${user.id}`)
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
-            planId = userData.plan_id
-          }
+        if (!solutionsResponse.ok) {
+          throw new Error(`Erro ao buscar soluções: ${solutionsResponse.status}`)
         }
 
-        // Se tiver plano, buscar soluções disponíveis para o plano
-        let url = "/api/solutions/active"
-        if (planId) {
-          url = `/api/solutions/active?planId=${planId}`
+        if (!plansResponse.ok) {
+          throw new Error(`Erro ao buscar planos: ${plansResponse.status}`)
         }
 
-        const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error(`Erro ao buscar soluções: ${response.status}`)
+        if (!planSolutionsResponse.ok) {
+          throw new Error(`Erro ao buscar vínculos dos planos: ${planSolutionsResponse.status}`)
         }
 
-        const data = await response.json()
-        console.log("Soluções carregadas:", data)
-        setSolutions(data)
+        const [solutionsData, plansData, planSolutionsData] = await Promise.all([
+          solutionsResponse.json(),
+          plansResponse.json(),
+          planSolutionsResponse.json(),
+        ])
+
+        setSolutions(solutionsData)
+        setPlans(plansData)
+        setPlanSolutions(planSolutionsData)
+
+        if (userResponse && userResponse.ok) {
+          const userData = await userResponse.json()
+          setUserPlanId(userData.plan_id ?? null)
+          setUserPlanCode(userData.plan ?? null)
+        } else {
+          setUserPlanId(null)
+          setUserPlanCode(null)
+        }
       } catch (err) {
         console.error("Erro ao carregar soluções:", err)
         setError(err instanceof Error ? err.message : "Erro desconhecido")
@@ -170,66 +220,121 @@ export function SolucoesInteligentes() {
       }
     }
 
-    fetchSolutions()
+    void fetchSolutions()
   }, [user?.id, userLoading])
 
-  // Recomendações personalizadas - poderia ser baseado em alguma lógica do backend no futuro
-  const recomendados = solutions
-    .filter((solution) => solution.is_recommended)
-    .slice(0, 3)
-    .map((solution) => ({
-      ...solution,
-      status: "recomendado",
-      motivo: "Baseado no seu segmento de mercado",
-    }))
-
-  // Filtrar soluções com base na categoria ativa e termo de busca
-  const solucoesFiltradas = solutions.filter(
-    (solution) =>
-      (activeTab === "todos" || solution.category?.toLowerCase() === activeTab) &&
-      (searchTerm === "" ||
-        solution.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        solution.description?.toLowerCase().includes(searchTerm.toLowerCase())),
+  const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
+  const plansByCode = useMemo(
+    () => new Map(plans.filter((plan) => plan.code).map((plan) => [normalizePlanCode(plan.code)!, plan])),
+    [plans],
   )
 
-  // Encontrar a categoria correspondente para uma solução
-  const getCategoriaInfo = (categoriaId?: string | null) => {
-    return categorias.find((cat) => cat.id === categoriaId?.toLowerCase()) || categorias[0]
-  }
+  const effectiveUserPlanId = useMemo(() => {
+    if (userPlanId) return userPlanId
+    const normalizedCode = normalizePlanCode(userPlanCode)
+    if (!normalizedCode) return null
+    return plansByCode.get(normalizedCode)?.id ?? null
+  }, [plansByCode, userPlanCode, userPlanId])
 
-  // Função para obter o ícone correto para uma solução
+  const solutionPlanIds = useMemo(() => {
+    const map = new Map<number, number[]>()
+    for (const item of planSolutions) {
+      if (!item.solution_id || !item.plan_id) continue
+      const existing = map.get(item.solution_id) ?? []
+      existing.push(item.plan_id)
+      map.set(item.solution_id, existing)
+    }
+    return map
+  }, [planSolutions])
+
+  const minimumPlanBySolution = useMemo(() => {
+    const map = new Map<number, PlanRecord | null>()
+
+    for (const solution of solutions) {
+      const associatedPlanIds = solutionPlanIds.get(solution.id) ?? []
+      const associatedPlans = associatedPlanIds
+        .map((planId) => plansById.get(planId))
+        .filter((plan): plan is PlanRecord => Boolean(plan))
+        .sort((a, b) => {
+          const aOrder = a.sort_order ?? fallbackPlanOrder[normalizePlanCode(a.code) || ""] ?? 999
+          const bOrder = b.sort_order ?? fallbackPlanOrder[normalizePlanCode(b.code) || ""] ?? 999
+          return aOrder - bOrder
+        })
+
+      map.set(solution.id, associatedPlans[0] ?? null)
+    }
+
+    return map
+  }, [plansById, solutionPlanIds, solutions])
+
+  const accessBySolution = useMemo(() => {
+    const accessibleIds = new Set<number>()
+    if (!effectiveUserPlanId) return accessibleIds
+
+    for (const item of planSolutions) {
+      if (item.plan_id === effectiveUserPlanId && item.solution_id) {
+        accessibleIds.add(item.solution_id)
+      }
+    }
+
+    return accessibleIds
+  }, [effectiveUserPlanId, planSolutions])
+
+  const recomendados = useMemo(
+    () =>
+      solutions
+        .filter((solution) => solution.is_recommended)
+        .slice(0, 3)
+        .map((solution) => ({
+          ...solution,
+          motivo: "Baseado no seu segmento de mercado",
+        })),
+    [solutions],
+  )
+
+  const solucoesFiltradas = useMemo(
+    () =>
+      solutions.filter(
+        (solution) =>
+          (activeTab === "todos" || solution.category?.toLowerCase() === activeTab) &&
+          (searchTerm === "" ||
+            solution.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            solution.description?.toLowerCase().includes(searchTerm.toLowerCase())),
+      ),
+    [activeTab, searchTerm, solutions],
+  )
+
+  const minhasSolucoes = useMemo(
+    () => solucoesFiltradas.filter((solution) => accessBySolution.has(solution.id)),
+    [accessBySolution, solucoesFiltradas],
+  )
+
+  const solucoesAdicionais = useMemo(
+    () => solucoesFiltradas.filter((solution) => !accessBySolution.has(solution.id)),
+    [accessBySolution, solucoesFiltradas],
+  )
+
   const getSolutionIcon = (solution: Solution) => {
-    // Tenta usar o ícone da solução se existir
     if (solution.icon && iconMap[solution.icon]) {
       return iconMap[solution.icon]
     }
 
-    // Caso contrário, usa o ícone da categoria
     const categoriaInfo = getCategoriaInfo(solution.category)
     return categoriaInfo.icon || MessageSquare
   }
 
-  // Função para calcular quais categorias devem ser visíveis e quais devem ir para o dropdown
   const calcularCategoriasVisiveis = () => {
     if (!tabsListRef.current) return
 
-    const tabsList = tabsListRef.current
-    const tabsListWidth = tabsList.offsetWidth
-    const maxWidth = tabsListWidth * 0.8 // 80% da largura disponível
-
+    const tabsListWidth = tabsListRef.current.offsetWidth
+    const maxWidth = tabsListWidth * 0.8
     let totalWidth = 0
-    const visible: Categoria[] = []
+    const visible: Categoria[] = [categorias[0]]
     const hidden: Categoria[] = []
 
-    // Adicionar o botão "Todos" primeiro
-    const todosCategoria = categorias[0]
-    visible.push(todosCategoria)
-
-    // Calcular quais categorias cabem na largura disponível
-    for (let i = 1; i < categorias.length; i++) {
-      const categoria = categorias[i]
-      // Estimativa de largura para cada categoria (ajuste conforme necessário)
-      const categoriaWidth = categoria.label.length * 10 + 40 // Estimativa baseada no texto + ícone
+    for (let index = 1; index < categorias.length; index++) {
+      const categoria = categorias[index]
+      const categoriaWidth = categoria.label.length * 10 + 40
 
       if (totalWidth + categoriaWidth < maxWidth) {
         visible.push(categoria)
@@ -243,7 +348,6 @@ export function SolucoesInteligentes() {
     setHiddenCategories(hidden)
   }
 
-  // Recalcular categorias visíveis quando a janela for redimensionada
   useEffect(() => {
     calcularCategoriasVisiveis()
 
@@ -252,28 +356,110 @@ export function SolucoesInteligentes() {
     }
 
     window.addEventListener("resize", handleResize)
-    return () => {
-      window.removeEventListener("resize", handleResize)
-    }
+    return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Verificar disponibilidade de uma solução para o usuário atual
-  const checkSolutionAvailability = async (solutionId: number) => {
-    try {
-      const response = await fetch(`/api/solutions/${solutionId}/availability`)
-      if (!response.ok) {
-        throw new Error(`Erro ao verificar disponibilidade: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data.available
-    } catch (error) {
-      console.error("Erro ao verificar disponibilidade:", error)
-      return false
+  const renderSolutionsGrid = (items: Solution[], mode: "included" | "additional") => {
+    if (items.length === 0) {
+      return (
+        <div className="col-span-3 flex flex-col items-center justify-center py-12">
+          <div className="rounded-full bg-muted p-4">
+            <Plus className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="mt-4 text-lg font-medium">
+            {mode === "included" ? "Nenhuma solução disponível no seu plano" : "Nenhuma solução adicional encontrada"}
+          </h3>
+          <p className="mt-2 text-center text-muted-foreground">
+            {mode === "included"
+              ? "Ajuste a busca ou revise o plano vinculado a este usuário."
+              : "Não encontramos outras soluções para esta categoria ou termo de busca."}
+          </p>
+        </div>
+      )
     }
+
+    return items.map((solution) => {
+      const categoriaInfo = getCategoriaInfo(solution.category)
+      const IconComponent = getSolutionIcon(solution)
+      const minimumPlan = minimumPlanBySolution.get(solution.id)
+      const minimumPlanLabel = minimumPlan?.name || getPlanLabel(minimumPlan?.code, plansByCode)
+
+      return (
+        <Link href={`/solucao/${solution.id}`} key={`${mode}-${solution.id}`} className="block h-full">
+          <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
+            <CardHeader className="flex-grow-0 pb-2">
+              <div className="flex items-center justify-between">
+                <div className={`rounded-md p-2 ${categoriaInfo.cor}`}>
+                  <IconComponent className="h-5 w-5" />
+                </div>
+                {mode === "included" && solution.is_active && (
+                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                    Ativo
+                  </Badge>
+                )}
+                {mode === "additional" && minimumPlan && (
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-600">
+                    {minimumPlanLabel}
+                  </Badge>
+                )}
+              </div>
+              <CardTitle className="text-lg">{solution.name}</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="min-h-[2.5rem] line-clamp-2 text-sm text-muted-foreground">
+                      {solution.description || "Sem descrição"}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    {solution.description || "Sem descrição"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge variant="outline" className={categoriaInfo.cor}>
+                  {categoriaInfo.label}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{solution.activations || 0} ativações</span>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <div className="h-16 rounded-md bg-accent/50 p-3">
+                <div className="text-xs text-muted-foreground">Prévia da solução</div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-grow-0 gap-2 pt-2">
+              {mode === "included" ? (
+                solution.is_active ? (
+                  <>
+                    <Button variant="outline" className="flex-1">
+                      Configurar
+                    </Button>
+                    <Button variant="destructive" size="icon">
+                      <div className="h-4 w-4 rounded-full bg-current" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button className="flex-1">Ativar</Button>
+                    <Button variant="outline">Testar</Button>
+                  </>
+                )
+              ) : (
+                <>
+                  <Button variant="outline" className="flex-1">
+                    Disponível a partir do {minimumPlanLabel}
+                  </Button>
+                  <Button variant="ghost">Ver detalhes</Button>
+                </>
+              )}
+            </CardFooter>
+          </Card>
+        </Link>
+      )
+    })
   }
 
-  // Renderizar esqueleto de carregamento
   if (loading) {
     return (
       <div className="space-y-6">
@@ -292,15 +478,14 @@ export function SolucoesInteligentes() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-64" />
+          {[1, 2, 3, 4, 5, 6].map((index) => (
+            <Skeleton key={index} className="h-64" />
           ))}
         </div>
       </div>
     )
   }
 
-  // Renderizar mensagem de erro
   if (error) {
     return (
       <div className="space-y-6">
@@ -309,7 +494,7 @@ export function SolucoesInteligentes() {
           <p className="text-muted-foreground">Explore e ative soluções para otimizar seu negócio.</p>
         </div>
 
-        <div className="p-6 bg-red-50 border border-red-200 rounded-md text-red-800">
+        <div className="rounded-md border border-red-200 bg-red-50 p-6 text-red-800">
           <h3 className="text-lg font-medium">Erro ao carregar soluções</h3>
           <p className="mt-2">{error}</p>
           <Button onClick={() => window.location.reload()} className="mt-4" variant="outline">
@@ -334,7 +519,7 @@ export function SolucoesInteligentes() {
             placeholder="Buscar soluções..."
             className="pl-9"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
           />
         </div>
         <Button variant="outline" size="icon" title="Filtros adicionais">
@@ -356,7 +541,7 @@ export function SolucoesInteligentes() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-9 px-3">
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="mr-1 h-4 w-4" />
                     Mais
                   </Button>
                 </DropdownMenuTrigger>
@@ -377,102 +562,38 @@ export function SolucoesInteligentes() {
           </TabsList>
         </div>
 
-        <TabsContent value={activeTab} className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {solucoesFiltradas.length > 0 ? (
-              solucoesFiltradas.map((solution) => {
-                const categoriaInfo = getCategoriaInfo(solution.category)
-                const IconComponent = getSolutionIcon(solution)
-                return (
-                  <Link href={`/solucao/${solution.id}`} key={solution.id} className="block h-full">
-                    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.02] h-full flex flex-col">
-                      <CardHeader className="pb-2 flex-grow-0">
-                        <div className="flex items-center justify-between">
-                          <div className={`rounded-md p-2 ${categoriaInfo.cor}`}>
-                            <IconComponent className="h-5 w-5" />
-                          </div>
-                          {solution.is_active && (
-                            <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                              Ativo
-                            </Badge>
-                          )}
-                          {solution.custom_price && (
-                            <Badge variant="outline" className="border-muted-foreground">
-                              Personalizado
-                            </Badge>
-                          )}
-                        </div>
-                        <CardTitle className="text-lg">{solution.name}</CardTitle>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                                {solution.description || "Sem descrição"}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs">
-                              {solution.description || "Sem descrição"}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <div className="mt-1 flex items-center gap-2">
-                          <Badge variant="outline" className={categoriaInfo.cor}>
-                            {categoriaInfo.label}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{solution.activations || 0} ativações</span>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-grow">
-                        <div className="h-16 rounded-md bg-accent/50 p-3">
-                          <div className="text-xs text-muted-foreground">Prévia da solução</div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex gap-2 pt-2 flex-grow-0">
-                        <>
-                          {solution.is_active ? (
-                            <>
-                              <Button variant="outline" className="flex-1">
-                                Configurar
-                              </Button>
-                              <Button variant="destructive" size="icon">
-                                <div className="h-4 w-4 rounded-full bg-current" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button className="flex-1">Ativar</Button>
-                              <Button variant="outline">Testar</Button>
-                            </>
-                          )}
-                        </>
-                      </CardFooter>
-                    </Card>
-                  </Link>
-                )
-              })
-            ) : (
-              <div className="col-span-3 flex flex-col items-center justify-center py-12">
-                <div className="rounded-full bg-muted p-4">
-                  <Plus className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="mt-4 text-lg font-medium">Nenhuma solução encontrada</h3>
-                <p className="mt-2 text-center text-muted-foreground">
-                  Não encontramos soluções para esta categoria ou termo de busca. Deseja solicitar uma nova solução?
-                </p>
-                <Button className="mt-4">Solicitar Nova Solução</Button>
-              </div>
-            )}
-          </div>
+        <TabsContent value={activeTab} className="mt-6 space-y-8">
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Minhas Soluções</h2>
+              <p className="text-sm text-muted-foreground">
+                Soluções disponíveis para o plano {getPlanLabel(userPlanCode, plansByCode)}.
+              </p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{renderSolutionsGrid(minhasSolucoes, "included")}</div>
+          </section>
+
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Soluções Adicionais</h2>
+              <p className="text-sm text-muted-foreground">
+                Recursos que podem ser liberados em planos superiores ou combinações específicas.
+              </p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {renderSolutionsGrid(solucoesAdicionais, "additional")}
+            </div>
+          </section>
+
           {activeTab !== "todos" && solucoesFiltradas.length > 0 && (
-            <Button variant="ghost" className="mt-4">
-              Ver mais soluções de {categorias.find((c) => c.id === activeTab)?.label}
+            <Button variant="ghost">
+              Ver mais soluções de {categorias.find((categoria) => categoria.id === activeTab)?.label}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Seção Recomendado para Você */}
       {recomendados.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -487,13 +608,13 @@ export function SolucoesInteligentes() {
               const IconComponent = getSolutionIcon(solution)
               return (
                 <Link href={`/solucao/${solution.id}`} key={`rec-${solution.id}`} className="block h-full">
-                  <Card className="group overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.02] h-full flex flex-col">
-                    <CardHeader className="pb-2 flex-grow-0">
+                  <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
+                    <CardHeader className="flex-grow-0 pb-2">
                       <div className="flex items-center justify-between">
                         <div className={`rounded-md p-2 ${categoriaInfo.cor}`}>
                           <IconComponent className="h-5 w-5" />
                         </div>
-                        <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-500 font-medium">
+                        <span className="rounded-full bg-yellow-500/20 px-2 py-1 text-xs font-medium text-yellow-500">
                           Recomendado
                         </span>
                       </div>
@@ -501,7 +622,7 @@ export function SolucoesInteligentes() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                            <div className="min-h-[2.5rem] line-clamp-2 text-sm text-muted-foreground">
                               {solution.description || "Sem descrição"}
                             </div>
                           </TooltipTrigger>
@@ -510,7 +631,7 @@ export function SolucoesInteligentes() {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         <span className="font-medium">Por que recomendamos:</span> {solution.motivo}
                       </p>
                     </CardHeader>
@@ -519,7 +640,7 @@ export function SolucoesInteligentes() {
                         <div className="text-xs text-muted-foreground">Prévia da solução</div>
                       </div>
                     </CardContent>
-                    <CardFooter className="flex gap-2 pt-2 flex-grow-0">
+                    <CardFooter className="flex flex-grow-0 gap-2 pt-2">
                       <Button className="flex-1">Ativar</Button>
                       <Button variant="outline">Testar</Button>
                     </CardFooter>

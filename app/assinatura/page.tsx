@@ -1,17 +1,17 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
 import { Check, CreditCard, Download } from "lucide-react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useCurrentUser } from "@/hooks/use-current-user"
 import type { Plan } from "@/lib/services/plans-service"
 import { PLAN_MAPPING } from "@/lib/constants"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { Header } from "@/components/header"
+import { Sidebar } from "@/components/sidebar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type BillingPlan = Plan & {
   recursos: string[]
@@ -20,6 +20,30 @@ type BillingPlan = Plan & {
 type UserPlanRecord = {
   plan?: string | null
   plan_id: number | null
+}
+
+const mojibakeMap: Array<[string, string]> = [
+  ["Ã§", "ç"],
+  ["Ã£", "ã"],
+  ["Ã¡", "á"],
+  ["Ã©", "é"],
+  ["Ã­", "í"],
+  ["Ã³", "ó"],
+  ["Ãº", "ú"],
+  ["Ã¢", "â"],
+  ["Ãª", "ê"],
+  ["Ã´", "ô"],
+  ["Ã ", "à"],
+  ["Ã‰", "É"],
+  ["Ã‡", "Ç"],
+  ["Âº", "º"],
+  ["Âª", "ª"],
+  ["Â", ""],
+]
+
+function fixMojibake(value?: string | null) {
+  if (!value) return ""
+  return mojibakeMap.reduce((text, [broken, fixed]) => text.replaceAll(broken, fixed), value)
 }
 
 export default function AssinaturaPage() {
@@ -43,7 +67,9 @@ export default function AssinaturaPage() {
         const data = (await response.json()) as Plan[]
         const normalized = data.map((plan) => ({
           ...plan,
-          recursos: Array.isArray(plan.features) ? plan.features.filter((item): item is string => typeof item === "string") : [],
+          recursos: Array.isArray(plan.features)
+            ? plan.features.filter((item): item is string => typeof item === "string").map((item) => fixMojibake(item))
+            : [],
         }))
 
         setPlans(normalized)
@@ -55,7 +81,7 @@ export default function AssinaturaPage() {
       }
     }
 
-    loadPlans()
+    void loadPlans()
   }, [])
 
   useEffect(() => {
@@ -87,13 +113,14 @@ export default function AssinaturaPage() {
     }
 
     if (!loadingUser) {
-      loadCurrentPlan()
+      void loadCurrentPlan()
     }
   }, [loadingUser, user?.id])
 
-  const sortedPlans = useMemo(() => {
-    return [...plans].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.price ?? 0) - (b.price ?? 0))
-  }, [plans])
+  const sortedPlans = useMemo(
+    () => [...plans].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.price ?? 0) - (b.price ?? 0)),
+    [plans],
+  )
 
   const normalizedCurrentPlanCode = currentPlanCode
     ? PLAN_MAPPING[currentPlanCode.toLowerCase() as keyof typeof PLAN_MAPPING] || currentPlanCode.toLowerCase()
@@ -130,7 +157,7 @@ export default function AssinaturaPage() {
   }
 
   const getDescription = (plan: BillingPlan) => {
-    if (plan.description) return plan.description
+    if (plan.description) return fixMojibake(plan.description)
     if (plan.max_solutions === null) return "Plano com acesso ampliado às soluções da plataforma."
     return `Plano com até ${plan.max_solutions} soluções ativas simultaneamente.`
   }
@@ -153,7 +180,7 @@ export default function AssinaturaPage() {
     <div className="flex h-screen bg-background">
       <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
       <div
-        className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:ml-[70px]" : "md:ml-64"}`}
+        className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:ml-[70px]" : "md:ml-64"}`}
       >
         <Header />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
@@ -197,12 +224,12 @@ export default function AssinaturaPage() {
                         return (
                           <Card key={plan.id} className={`flex flex-col ${destaque ? "border-primary shadow-md" : ""}`}>
                             {destaque && (
-                              <div className="absolute -top-3 left-0 right-0 mx-auto w-fit rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                              <div className="absolute left-0 right-0 mx-auto -top-3 w-fit rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
                                 Plano Atual
                               </div>
                             )}
                             <CardHeader>
-                              <CardTitle>{plan.name}</CardTitle>
+                              <CardTitle>{fixMojibake(plan.name)}</CardTitle>
                               <div className="flex items-baseline">
                                 <span className="text-3xl font-bold">{preco}</span>
                                 <span className="text-sm text-muted-foreground">{periodo}</span>
@@ -241,9 +268,7 @@ export default function AssinaturaPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium">Próxima Cobrança</p>
-                        <p className="text-lg">
-                          {isLoading ? "Carregando..." : currentPlan?.price ? "A definir" : "Sem cobrança"}
-                        </p>
+                        <p className="text-lg">{isLoading ? "Carregando..." : currentPlan?.price ? "A definir" : "Sem cobrança"}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">Valor</p>
@@ -319,7 +344,9 @@ export default function AssinaturaPage() {
                           </div>
                           <div>
                             <p className="font-medium">Método de pagamento ainda não configurado</p>
-                            <p className="text-sm text-muted-foreground">Integração financeira será ligada quando o fluxo de cobrança entrar.</p>
+                            <p className="text-sm text-muted-foreground">
+                              Integração financeira será ligada quando o fluxo de cobrança entrar.
+                            </p>
                           </div>
                         </div>
                         <Badge variant="outline">Pendente</Badge>
