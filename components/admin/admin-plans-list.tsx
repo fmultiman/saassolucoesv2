@@ -47,6 +47,7 @@ export function AdminPlansList() {
     description: "",
     price: "",
     billing_cycle: "mensal",
+    max_solutions: "",
     features: [] as string[],
   })
   const { toast } = useToast()
@@ -124,6 +125,7 @@ export function AdminPlansList() {
         description: plan.description || "",
         price: plan.price?.toString() || "",
         billing_cycle: plan.billing_cycle || "mensal",
+        max_solutions: plan.max_solutions?.toString() || "",
         features: Array.isArray(plan.features) ? plan.features.filter((feature): feature is string => typeof feature === "string") : [],
       })
     } else {
@@ -133,6 +135,7 @@ export function AdminPlansList() {
         description: "",
         price: "",
         billing_cycle: "mensal",
+        max_solutions: "",
         features: [],
       })
     }
@@ -165,6 +168,8 @@ export function AdminPlansList() {
         description: newPlan.description,
         price: newPlan.price ? Number.parseFloat(newPlan.price) : null,
         billing_cycle: newPlan.billing_cycle,
+        interval: newPlan.billing_cycle === "anual" ? "year" : "month",
+        max_solutions: newPlan.max_solutions ? Number.parseInt(newPlan.max_solutions, 10) : null,
         features: newPlan.features,
       }
 
@@ -274,6 +279,7 @@ export function AdminPlansList() {
                 <TableHeaderCell>Descrição</TableHeaderCell>
                 <TableHeaderCell>Preço</TableHeaderCell>
                 <TableHeaderCell>Soluções</TableHeaderCell>
+                <TableHeaderCell>Max. Ativas</TableHeaderCell>
                 <TableHeaderCell>Ciclo</TableHeaderCell>
                 <TableHeaderCell>Recursos</TableHeaderCell>
                 <TableHeaderCell>Ações</TableHeaderCell>
@@ -296,6 +302,7 @@ export function AdminPlansList() {
                       <Skeleton className="h-4 w-20" />
                     )}
                   </TableCell>
+                  <TableCell>{plan.max_solutions ?? <span className="text-muted-foreground">Ilimitado</span>}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{plan.billing_cycle === "anual" ? "Anual" : "Mensal"}</Badge>
                   </TableCell>
@@ -401,6 +408,20 @@ export function AdminPlansList() {
                 <option value="mensal">Mensal</option>
                 <option value="anual">Anual</option>
               </select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="max_solutions" className="text-right">
+                Max. Ativas
+              </Label>
+              <Input
+                id="max_solutions"
+                type="number"
+                min="0"
+                value={newPlan.max_solutions}
+                onChange={(e) => setNewPlan({ ...newPlan, max_solutions: e.target.value })}
+                className="col-span-3"
+                placeholder="Deixe em branco para ilimitado"
+              />
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
               <Label className="text-right pt-2">Recursos</Label>

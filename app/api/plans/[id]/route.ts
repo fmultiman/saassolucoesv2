@@ -42,7 +42,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "ID do plano invalido" }, { status: 400 })
     }
     const body = await request.json()
-    const { name, description, price, features } = body
+    const {
+      name,
+      description,
+      price,
+      code,
+      features,
+      billing_cycle,
+      interval,
+      is_active,
+      is_featured,
+      max_solutions,
+      sort_order,
+    } = body
 
     const supabase = createServiceRoleClient()
 
@@ -59,13 +71,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Atualizar o plano
+    const nextBillingCycle = billing_cycle !== undefined ? billing_cycle : existingData.billing_cycle
+    const nextInterval = interval !== undefined ? interval : nextBillingCycle === "anual" ? "year" : "month"
+
     const { data, error } = await supabase
       .from("plans")
       .update({
         name: name !== undefined ? name : existingData.name,
         description: description !== undefined ? description : existingData.description,
         price: price !== undefined ? price : existingData.price,
+        code: code !== undefined ? code : existingData.code,
         features: features !== undefined ? features : existingData.features,
+        billing_cycle: nextBillingCycle,
+        interval: nextInterval,
+        is_active: is_active !== undefined ? is_active : existingData.is_active,
+        is_featured: is_featured !== undefined ? is_featured : existingData.is_featured,
+        max_solutions: max_solutions !== undefined ? max_solutions : existingData.max_solutions,
+        sort_order: sort_order !== undefined ? sort_order : existingData.sort_order,
         updated_at: new Date().toISOString(),
       })
       .eq("id", planId)
