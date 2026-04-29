@@ -6,7 +6,6 @@ const publicRoutes = [
   "/",
   "/signup",
   "/blog",
-  "/marketplace",
   "/expansao",
   "/recursos-adicionais",
   "/auth/verify",
@@ -39,7 +38,8 @@ function getRedirectPath(pathname: string, userType?: string | null) {
     pathname.startsWith("/perfil") ||
     pathname.startsWith("/solucao") ||
     pathname.startsWith("/solucoes") ||
-    pathname.startsWith("/onboarding")
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/marketplace")
 
   if (isAdminRoute && userType !== "admin") return "/dashboard"
   if (isClientRoute && userType === "admin") return "/admin"
@@ -66,7 +66,8 @@ function getUnauthenticatedRedirectPath(pathname: string) {
     pathname.startsWith("/perfil") ||
     pathname.startsWith("/solucao") ||
     pathname.startsWith("/solucoes") ||
-    pathname.startsWith("/onboarding")
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/marketplace")
 
   return protectedClientRoutes ? "/login" : null
 }
