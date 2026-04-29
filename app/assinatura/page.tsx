@@ -18,6 +18,7 @@ type BillingPlan = Plan & {
 }
 
 type UserPlanRecord = {
+  plan?: string | null
   plan_id: number | null
 }
 
@@ -25,6 +26,7 @@ export default function AssinaturaPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [plans, setPlans] = useState<BillingPlan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<number | null>(null)
+  const [currentPlanCode, setCurrentPlanCode] = useState<string | null>(null)
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [loadingCurrentPlan, setLoadingCurrentPlan] = useState(true)
   const { user, loading: loadingUser } = useCurrentUser()
@@ -60,6 +62,7 @@ export default function AssinaturaPage() {
     const loadCurrentPlan = async () => {
       if (!user?.id) {
         setCurrentPlanId(null)
+        setCurrentPlanCode(null)
         setLoadingCurrentPlan(false)
         return
       }
@@ -73,9 +76,11 @@ export default function AssinaturaPage() {
 
         const userData = (await userResponse.json()) as UserPlanRecord
         setCurrentPlanId(userData.plan_id ?? null)
+        setCurrentPlanCode(userData.plan ?? null)
       } catch (error) {
         console.error("Erro ao carregar plano atual do usuário:", error)
         setCurrentPlanId(null)
+        setCurrentPlanCode(null)
       } finally {
         setLoadingCurrentPlan(false)
       }
@@ -90,11 +95,19 @@ export default function AssinaturaPage() {
     return [...plans].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.price ?? 0) - (b.price ?? 0))
   }, [plans])
 
-  const currentPlan = sortedPlans.find((plan) => plan.id === currentPlanId) || null
-
-  const currentPlanCode = currentPlan?.code
-    ? PLAN_MAPPING[currentPlan.code.toLowerCase() as keyof typeof PLAN_MAPPING] || currentPlan.code.toLowerCase()
+  const normalizedCurrentPlanCode = currentPlanCode
+    ? PLAN_MAPPING[currentPlanCode.toLowerCase() as keyof typeof PLAN_MAPPING] || currentPlanCode.toLowerCase()
     : null
+
+  const currentPlan =
+    sortedPlans.find((plan) => plan.id === currentPlanId) ||
+    sortedPlans.find((plan) => {
+      if (!normalizedCurrentPlanCode || !plan.code) return false
+      const normalizedPlanCode =
+        PLAN_MAPPING[plan.code.toLowerCase() as keyof typeof PLAN_MAPPING] || plan.code.toLowerCase()
+      return normalizedPlanCode === normalizedCurrentPlanCode
+    }) ||
+    null
 
   const faturas = [
     {
@@ -245,7 +258,7 @@ export default function AssinaturaPage() {
                       <div>
                         <p className="text-sm font-medium">Status</p>
                         <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/20">
-                          {currentPlanCode ? "Ativo" : "Pendente"}
+                          {currentPlan ? "Ativo" : "Pendente"}
                         </Badge>
                       </div>
                     </div>

@@ -161,12 +161,16 @@ export function AdminPlansList() {
 
   const openSolutionsDialog = (plan: Plan) => {
     setEditingPlan(plan)
-    setIsSolutionsDialogOpen(true)
+    window.setTimeout(() => {
+      setIsSolutionsDialogOpen(true)
+    }, 0)
   }
 
   const confirmDelete = (plan: Plan) => {
     setPlanToDelete(plan)
-    setIsDeleteDialogOpen(true)
+    window.setTimeout(() => {
+      setIsDeleteDialogOpen(true)
+    }, 0)
   }
 
   const handleSavePlan = async () => {
