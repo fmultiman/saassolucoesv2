@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { Bell, Search, User } from "lucide-react"
+import { Search, User } from "lucide-react"
 import { NotificationCenter } from "@/components/notification-center"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -62,6 +63,7 @@ export function AdminHeader() {
         </form>
       </div>
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <NotificationCenter />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
