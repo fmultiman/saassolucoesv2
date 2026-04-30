@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Loader2, CuboidIcon } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
@@ -19,6 +20,7 @@ type CurrentProfileResponse = {
 }
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -26,6 +28,12 @@ export default function LoginPage() {
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
   const [resetSent, setResetSent] = useState(false)
+
+  const callbackError = searchParams.get("error")
+  const callbackErrorMessage =
+    callbackError === "pkce_failed"
+      ? "Nao foi possivel concluir o login pelo link de email neste navegador interno. Abra o link no navegador principal e tente novamente."
+      : null
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -113,9 +121,9 @@ export default function LoginPage() {
           <CardDescription>Faca login para acessar sua conta</CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
+          {(error || callbackErrorMessage) && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error || callbackErrorMessage}</AlertDescription>
             </Alert>
           )}
 
