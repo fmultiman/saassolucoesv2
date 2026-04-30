@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import { supabase } from "@/lib/supabase/client"
+import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { supabase } from "@/lib/supabase/client"
 
 export function EmailVerificationDiagnostics() {
   const [testEmail, setTestEmail] = useState("")
@@ -25,11 +26,11 @@ export function EmailVerificationDiagnostics() {
     setResult(null)
 
     try {
-      // Enviar email de verificação de teste
-      const { data, error: signInError } = await supabase.auth.signInWithOtp({
+      const { emailRedirectTo } = getAuthRedirectUrls()
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email: testEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/verify`,
+          emailRedirectTo,
         },
       })
 
@@ -37,7 +38,6 @@ export function EmailVerificationDiagnostics() {
         throw signInError
       }
 
-      // Obter configurações do Supabase
       const { data: settings, error: settingsError } =
         (await (supabase.auth as any).getSettings?.()) ?? { data: null, error: null }
 
@@ -46,14 +46,17 @@ export function EmailVerificationDiagnostics() {
       }
 
       setResult({
-        message: "Email de verificação enviado com sucesso!",
+        message: "Email de verificacao enviado com sucesso!",
         email: testEmail,
-        redirectTo: `${window.location.origin}/auth/verify`,
+        redirectTo: emailRedirectTo,
         supabaseSettings: settings,
       })
-    } catch (err: any) {
-      console.error("Erro ao testar verificação de email:", err)
-      setError(err.message || "Ocorreu um erro ao testar a verificação de email")
+    } catch (verificationError) {
+      setError(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Ocorreu um erro ao testar a verificacao de email",
+      )
     } finally {
       setLoading(false)
     }
@@ -62,8 +65,8 @@ export function EmailVerificationDiagnostics() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Diagnóstico de Verificação de Email</CardTitle>
-        <CardDescription>Teste o processo de verificação de email</CardDescription>
+        <CardTitle>Diagnostico de Verificacao de Email</CardTitle>
+        <CardDescription>Teste o processo de verificacao de email</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (
@@ -89,14 +92,14 @@ export function EmailVerificationDiagnostics() {
               type="email"
               placeholder="seu@email.com"
               value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
+              onChange={(event) => setTestEmail(event.target.value)}
             />
           </div>
 
           {result && (
             <div className="rounded-md bg-muted p-4 mt-4">
               <h3 className="text-sm font-medium mb-2">Detalhes do Teste</h3>
-              <pre className="text-xs overflow-auto p-2 bg-background rounded">{JSON.stringify(result, null, 2)}</pre>
+              <pre className="text-xs overflow-auto rounded bg-background p-2">{JSON.stringify(result, null, 2)}</pre>
             </div>
           )}
         </div>

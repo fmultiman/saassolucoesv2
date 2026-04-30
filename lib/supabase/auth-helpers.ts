@@ -1,32 +1,43 @@
-/**
- * Retorna as URLs de redirecionamento para autenticação
- */
-export function getAuthRedirectUrls() {
-  // Prioridade: 1. URL do site em produção, 2. window.location.origin, 3. localhost
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
+const PRODUCTION_SITE_URL = "https://saas.multihuman.com.br"
 
-  // Garantir que não há barras duplicadas
+function isLocalOrigin(origin: string) {
+  return origin.includes("localhost") || origin.includes("127.0.0.1")
+}
+
+function resolveBaseUrl() {
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl
+  }
+
+  if (typeof window !== "undefined") {
+    const currentOrigin = window.location.origin
+    if (isLocalOrigin(currentOrigin)) {
+      return currentOrigin
+    }
+  }
+
+  return PRODUCTION_SITE_URL
+}
+
+export function getAuthRedirectUrls() {
+  const baseUrl = resolveBaseUrl()
   const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
 
-  // Log para depuração (apenas em desenvolvimento)
   if (process.env.NODE_ENV === "development") {
     console.log("Base URL para redirecionamento:", normalizedBaseUrl)
   }
 
   return {
-    emailRedirectTo: `${normalizedBaseUrl}/auth/verify`,
+    emailRedirectTo: `${normalizedBaseUrl}/auth/callback`,
     resetPasswordRedirectTo: `${normalizedBaseUrl}/auth/reset-password`,
   }
 }
 
-/**
- * Função de debug para verificar URLs de redirecionamento
- */
 export function logAuthRedirectUrls() {
   const urls = getAuthRedirectUrls()
-  console.log("=== URLs de Redirecionamento de Autenticação ===")
+  console.log("=== URLs de Redirecionamento de Autenticacao ===")
   console.log("Email Redirect:", urls.emailRedirectTo)
   console.log("Reset Password Redirect:", urls.resetPasswordRedirectTo)
   console.log("NEXT_PUBLIC_SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL)
@@ -35,24 +46,21 @@ export function logAuthRedirectUrls() {
   return urls
 }
 
-/**
- * Formata mensagens de erro de autenticação para exibição ao usuário
- */
-export function formatAuthError(error: any): string {
+export function formatAuthError(error: unknown): string {
   if (!error) return "Ocorreu um erro desconhecido"
 
-  const errorMessage = error.message || error.toString()
+  const errorMessage = error instanceof Error ? error.message : String(error)
 
   if (errorMessage.includes("Invalid login credentials")) {
     return "Email ou senha incorretos"
   }
 
   if (errorMessage.includes("Email not confirmed")) {
-    return "Email não confirmado. Por favor, verifique sua caixa de entrada"
+    return "Email nao confirmado. Por favor, verifique sua caixa de entrada"
   }
 
   if (errorMessage.includes("already registered")) {
-    return "Este email já está registrado"
+    return "Este email ja esta registrado"
   }
 
   if (errorMessage.includes("Password should be at least")) {

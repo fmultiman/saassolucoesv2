@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Loader2, CuboidIcon } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
+import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -115,8 +116,9 @@ export default function AdminLoginPage() {
         return
       }
 
+      const { resetPasswordRedirectTo } = getAuthRedirectUrls()
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/admin/reset-password`,
+        redirectTo: resetPasswordRedirectTo,
       })
 
       if (resetError) {
