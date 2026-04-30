@@ -5,46 +5,106 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Loader2, CuboidIcon } from "lucide-react"
-import { sendMagicLink } from "@/lib/auth/browser-auth"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { supabase } from "@/lib/supabase/client"
+import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
 import { AuthDivider } from "@/components/auth/auth-divider"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+type CurrentProfileResponse = {
+  user?: {
+    user_type?: string | null
+  }
+}
+
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetSent, setResetSent] = useState(false)
 
   const callbackError = searchParams.get("error")
-  const callbackErrorMessage = callbackError === "auth_failed" ? "Nao foi possivel concluir seu login. Tente novamente." : null
+  const callbackErrorMessage =
+    callbackError === "pkce_failed"
+      ? "Nao foi possivel concluir o login pelo link de email neste navegador interno. Abra o link no navegador principal e tente novamente."
+      : null
 
-  const handleMagicLinkLogin = async (event: React.FormEvent) => {
+  const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
-    setSuccess(null)
 
     try {
-      const { error: magicLinkError } = await sendMagicLink({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        shouldCreateUser: false,
+        password,
       })
 
-      if (magicLinkError) {
-        throw magicLinkError
+      if (signInError) {
+        throw signInError
       }
 
-      setSuccess("Enviamos um link de acesso para seu email. Abra o link para entrar na plataforma.")
+      if (!data?.session) {
+        throw new Error("Nao foi possivel iniciar a sessao")
+      }
+
+      const profileResponse = await fetch("/api/user/profile", {
+        method: "GET",
+        cache: "no-store",
+      })
+      const profilePayload = (await profileResponse.json().catch(() => null)) as CurrentProfileResponse | null
+
+      if (!profileResponse.ok || !profilePayload?.user?.user_type) {
+        throw new Error("Nao foi possivel carregar o perfil do usuario")
+      }
+
+      window.location.href = profilePayload.user.user_type === "admin" ? "/admin" : "/dashboard"
     } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro ao enviar o link de acesso."
-      setError(message)
+      const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro ao fazer login."
+
+      if (message.includes("Invalid login credentials")) {
+        setError("Email ou senha incorretos. Por favor, verifique suas credenciais.")
+      } else if (message.includes("Email not confirmed")) {
+        setError("Email nao confirmado. Por favor, verifique sua caixa de entrada.")
+      } else {
+        setError(message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      if (!resetEmail || !resetEmail.includes("@")) {
+        setError("Por favor, insira um email valido.")
+        return
+      }
+
+      const { resetPasswordRedirectTo } = getAuthRedirectUrls()
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: resetPasswordRedirectTo,
+      })
+
+      if (resetError) {
+        throw resetError
+      }
+
+      setResetSent(true)
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : "Ocorreu um erro ao enviar o email de recuperacao.")
     } finally {
       setLoading(false)
     }
@@ -54,13 +114,13 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mb-4 flex justify-center">
+          <div className="flex justify-center mb-4">
             <div className="rounded-md bg-primary/10 p-2">
               <CuboidIcon className="h-8 w-8 text-primary" />
             </div>
           </div>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Entre com Google ou receba um link magico por email.</CardDescription>
+          <CardDescription>Faca login para acessar sua conta</CardDescription>
         </CardHeader>
         <CardContent>
           {(error || callbackErrorMessage) && (
@@ -69,25 +129,23 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          {success ? (
-            <Alert className="mb-4 bg-green-500/10 text-green-500 border-green-500/20">
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          ) : null}
-
           {!isResetPasswordOpen ? (
             <>
               <GoogleAuthButton disabled={loading} />
               <AuthDivider />
-              <form onSubmit={handleMagicLinkLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    id="password"
+                    type="password"
+                    placeholder="******"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     required
                   />
                 </div>
@@ -95,26 +153,54 @@ export default function LoginPage() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando link...
+                      Entrando...
                     </>
                   ) : (
-                    "Entrar com email"
+                    "Entrar"
                   )}
                 </Button>
               </form>
             </>
           ) : (
             <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  O acesso principal agora e por link magico no email ou Google. Se precisar, volte e use um desses fluxos.
-                </AlertDescription>
-              </Alert>
+              {resetSent ? (
+                <Alert className="bg-green-500/10 text-green-500 border-green-500/20">
+                  <AlertDescription>
+                    <p>Email de recuperacao enviado!</p>
+                    <p className="text-sm mt-2">Verifique sua caixa de entrada.</p>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={resetEmail}
+                      onChange={(event) => setResetEmail(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      "Enviar link de recuperacao"
+                    )}
+                  </Button>
+                </form>
+              )}
               <Button
                 variant="link"
                 className="w-full"
                 onClick={() => {
                   setIsResetPasswordOpen(false)
+                  setResetSent(false)
                   setError(null)
                 }}
               >
@@ -131,7 +217,6 @@ export default function LoginPage() {
               onClick={() => {
                 setIsResetPasswordOpen(true)
                 setError(null)
-                setSuccess(null)
               }}
             >
               Esqueceu a senha?
