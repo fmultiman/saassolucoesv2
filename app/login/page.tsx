@@ -5,6 +5,8 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Loader2, CuboidIcon } from "lucide-react"
+import type { UserRow } from "@/types/app-user"
+import { redirectAfterLogin } from "@/lib/auth/redirectAfterLogin"
 import { supabase } from "@/lib/supabase/client"
 import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
@@ -16,9 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 type CurrentProfileResponse = {
-  user?: {
-    user_type?: string | null
-  }
+  user?: UserRow
 }
 
 export default function LoginPage() {
@@ -35,7 +35,9 @@ export default function LoginPage() {
   const callbackErrorMessage =
     callbackError === "pkce_failed"
       ? "Nao foi possivel concluir o login pelo link de email neste navegador interno. Abra o link no navegador principal e tente novamente."
-      : null
+      : callbackError === "auth_failed"
+        ? "Nao foi possivel concluir seu login. Tente novamente."
+        : null
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -66,7 +68,7 @@ export default function LoginPage() {
         throw new Error("Nao foi possivel carregar o perfil do usuario")
       }
 
-      window.location.href = profilePayload.user.user_type === "admin" ? "/admin" : "/dashboard"
+      window.location.href = redirectAfterLogin(profilePayload.user)
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro ao fazer login."
 

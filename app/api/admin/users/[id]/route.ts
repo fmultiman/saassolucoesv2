@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getCurrentApiUser, requireAdminApiUser } from "@/lib/api-auth"
 import { z } from "zod"
 import { apiErrorResponse, badRequestError, logApiError, notFoundError } from "@/lib/errors"
+import { logError } from "@/lib/logger"
 import { invalidateUserCache } from "@/lib/services/user-service"
 import { resolvePlanFromDatabase } from "@/lib/plan-utils"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
@@ -117,27 +118,27 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<u
     const { user: currentUser } = await getCurrentApiUser()
 
     if (currentUser?.id === userId) {
-      return NextResponse.json({ error: "Nao e permitido excluir o proprio usuario admin." }, { status: 400 })
+      throw badRequestError("Nao e permitido excluir o proprio usuario admin.", undefined, "ADMIN_SELF_DELETE_BLOCKED")
     }
 
     const supabase = createServiceRoleClient()
 
     const { error: profileError } = await supabase.from("profiles").delete().eq("id", userId)
     if (profileError) {
-      console.error("Erro ao excluir perfil do usuario:", profileError)
-      return NextResponse.json({ error: "Erro ao excluir perfil do usuario." }, { status: 500 })
+      logError("ADMIN_USER_DELETE_PROFILE_ERROR", profileError)
+      throw profileError
     }
 
     const { error: publicUserError } = await supabase.from("users").delete().eq("id", userId)
     if (publicUserError) {
-      console.error("Erro ao excluir usuario da tabela public.users:", publicUserError)
-      return NextResponse.json({ error: "Erro ao excluir usuario da base publica." }, { status: 500 })
+      logError("ADMIN_USER_DELETE_PUBLIC_USER_ERROR", publicUserError)
+      throw publicUserError
     }
 
     const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
     if (authDeleteError) {
-      console.error("Erro ao excluir usuario do Auth:", authDeleteError)
-      return NextResponse.json({ error: authDeleteError.message || "Erro ao excluir usuario do Auth." }, { status: 500 })
+      logError("ADMIN_USER_DELETE_AUTH_ERROR", authDeleteError)
+      throw authDeleteError
     }
 
     await invalidateUserCache(userId)

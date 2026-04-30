@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
 import { z } from "zod"
-import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireAdminApiUser } from "@/lib/api-auth"
+import { apiErrorResponse, logApiError } from "@/lib/errors"
+import { logInfo } from "@/lib/logger"
 import { resolvePlanFromDatabase } from "@/lib/plan-utils"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
 
-// Schema de validação para atualização de perfil
 const profileUpdateSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(100).optional(),
   bio: z.string().max(500).nullable().optional(),
@@ -22,55 +21,23 @@ const profileUpdateSchema = z.object({
 })
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const authError = await requireAdminApiUser()
-  if (authError) return authError
-
   try {
+    const authError = await requireAdminApiUser()
+    if (authError) return authError
+
     const { id: userId } = await params
-    const supabase = createServerClient(await cookies())
+    const validData = profileUpdateSchema.parse(await request.json())
 
-    // Verificar autenticação e permissões de admin
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    logInfo("ADMIN_USER_PROFILE_UPDATE_REQUEST", {
+      userId,
+      fields: Object.keys(validData),
+    })
 
-    if (!session) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    // Verificar se o usuário é admin
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("user_type")
-      .eq("id", session.user.id)
-      .single()
-
-    if (userError || userData?.user_type !== "admin") {
-      return NextResponse.json({ error: "Permissão negada" }, { status: 403 })
-    }
-
-    // Obter dados do corpo da requisição
-    const body = await request.json()
-    console.log("Dados recebidos para atualização (admin):", body)
-
-    // Validar dados
-    const validationResult = profileUpdateSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      console.error("Erro de validação:", validationResult.error.format())
-      return NextResponse.json({ error: "Dados inválidos", details: validationResult.error.format() }, { status: 400 })
-    }
-
-    const validData = validationResult.data
-    console.log("Dados validados (admin):", validData)
-
-    // Usar o cliente com role de serviço para atualizar qualquer usuário
-    const supabaseAdmin = createServiceRoleClient()
+    const supabase = createServiceRoleClient()
     const { status, plan, name, ...profileData } = validData
     const resolvedPlan = plan ? await resolvePlanFromDatabase(plan) : null
 
-    // Atualizar perfil no banco de dados
-    const { error } = await supabaseAdmin
+    const { error: userError } = await supabase
       .from("users")
       .update({
         ...(status ? { status } : {}),
@@ -80,29 +47,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       })
       .eq("id", userId)
 
-    if (error) {
-      console.error("Erro ao atualizar perfil (admin):", error)
-      return NextResponse.json({ error: "Erro ao atualizar perfil", details: error }, { status: 500 })
+    if (userError) {
+      throw userError
     }
 
-    const { error: profileError } = await supabaseAdmin
+    const { error: profileError } = await supabase
       .from("profiles")
-      .upsert({
-        id: userId,
-        ...(name ? { name } : {}),
-        ...profileData,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(
+        {
+          id: userId,
+          ...(name ? { name } : {}),
+          ...profileData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      )
 
     if (profileError) {
-      console.error("Erro ao atualizar dados do perfil (admin):", profileError)
-      return NextResponse.json({ error: "Erro ao atualizar perfil", details: profileError }, { status: 500 })
+      throw profileError
     }
 
-    console.log("Perfil atualizado com sucesso (admin)")
-    return NextResponse.json({ success: true, message: "Perfil atualizado com sucesso" })
+    logInfo("ADMIN_USER_PROFILE_UPDATE_SUCCESS", { userId })
+
+    return NextResponse.json({
+      success: true,
+      message: "Perfil atualizado com sucesso",
+    })
   } catch (error) {
-    console.error("Erro ao processar requisição:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    logApiError("api/admin/users/[id]/profile PUT", error)
+    return apiErrorResponse(error)
   }
 }

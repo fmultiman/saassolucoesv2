@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { requireAdminApiUser } from "@/lib/api-auth"
+import { apiErrorResponse, badRequestError, logApiError } from "@/lib/errors"
 
 export async function GET(request: Request) {
   try {
@@ -29,9 +30,9 @@ export async function GET(request: Request) {
     if (error) throw error
 
     return NextResponse.json({ data })
-  } catch (error: any) {
-    console.error("Erro ao buscar verificacoes de email:", error)
-    return NextResponse.json({ error: error.message || "Erro ao processar solicitacao" }, { status: 500 })
+  } catch (error) {
+    logApiError("api/admin/email-verifications GET", error)
+    return apiErrorResponse(error, "Erro ao processar solicitacao")
   }
 }
 
@@ -44,7 +45,7 @@ export async function DELETE(request: Request) {
     const tokenId = searchParams.get("id")
 
     if (!tokenId) {
-      return NextResponse.json({ error: "ID do token nao fornecido" }, { status: 400 })
+      throw badRequestError("ID do token nao fornecido", undefined, "EMAIL_VERIFICATION_ID_REQUIRED")
     }
 
     const supabase = createServiceRoleClient()
@@ -53,8 +54,8 @@ export async function DELETE(request: Request) {
     if (error) throw error
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error("Erro ao excluir verificacao de email:", error)
-    return NextResponse.json({ error: error.message || "Erro ao processar solicitacao" }, { status: 500 })
+  } catch (error) {
+    logApiError("api/admin/email-verifications DELETE", error)
+    return apiErrorResponse(error, "Erro ao processar solicitacao")
   }
 }

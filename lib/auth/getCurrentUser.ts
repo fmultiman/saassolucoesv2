@@ -1,19 +1,11 @@
 import { cookies } from "next/headers"
-import type { User } from "@supabase/supabase-js"
-import type { Database } from "@/lib/supabase/types"
+import type { AppUserContext } from "@/types/app-user"
+import { ensureUserProfile } from "@/lib/auth/ensureUserProfile"
 import { createServerClient } from "@/lib/supabase/server"
-import { syncAuthUserRecord } from "@/lib/users"
 
-type PublicUserRow = Database["public"]["Tables"]["users"]["Row"]
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
+export type CurrentUserContext = AppUserContext
 
-export type CurrentUserContext = {
-  authUser: User
-  user: PublicUserRow
-  profile: ProfileRow | null
-}
-
-export async function getCurrentUser(): Promise<CurrentUserContext | null> {
+export async function getCurrentUser(): Promise<AppUserContext | null> {
   const supabase = createServerClient(await cookies())
   const {
     data: { user: authUser },
@@ -24,11 +16,5 @@ export async function getCurrentUser(): Promise<CurrentUserContext | null> {
     return null
   }
 
-  const syncedContext = await syncAuthUserRecord(authUser)
-
-  return {
-    authUser,
-    user: syncedContext.user,
-    profile: syncedContext.profile,
-  }
+  return ensureUserProfile(authUser)
 }

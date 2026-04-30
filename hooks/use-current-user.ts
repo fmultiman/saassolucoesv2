@@ -3,19 +3,17 @@
 import { useCallback, useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/types"
+import type { ProfileRow, UserRow } from "@/types/app-user"
 import { supabase } from "@/lib/supabase/client"
-
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
-type PublicUserRow = Database["public"]["Tables"]["users"]["Row"]
 
 type UserWithProfile = User & {
   user_type?: string
   profile?: ProfileRow | null
-  account?: PublicUserRow | null
+  account?: UserRow | null
 }
 
 type CurrentProfileResponse = {
-  user: PublicUserRow
+  user: UserRow
   profile: ProfileRow | null
 }
 

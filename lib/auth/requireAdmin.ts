@@ -5,7 +5,7 @@ import { forbiddenError } from "@/lib/errors"
 export async function requireAdmin(): Promise<CurrentUserContext> {
   const currentUser = await requireUser()
 
-  if (currentUser.user.user_type !== "admin") {
+  if (currentUser.profile.user_type !== "admin") {
     throw forbiddenError()
   }
 

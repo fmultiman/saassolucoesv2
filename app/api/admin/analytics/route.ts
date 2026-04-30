@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getPopularPaths, getEventCounts } from "@/lib/analytics"
 import { rateLimit } from "@/lib/rate-limit"
 import { requireAdminApiUser } from "@/lib/api-auth"
+import { apiErrorResponse, logApiError } from "@/lib/errors"
 
 export async function GET(request: Request) {
   try {
@@ -35,8 +36,8 @@ export async function GET(request: Request) {
         headers: rateLimitResult?.headers,
       },
     )
-  } catch (error: any) {
-    console.error("Erro ao obter analytics:", error)
-    return NextResponse.json({ error: error.message || "Erro ao obter analytics" }, { status: 500 })
+  } catch (error) {
+    logApiError("api/admin/analytics GET", error)
+    return apiErrorResponse(error, "Erro ao obter analytics")
   }
 }

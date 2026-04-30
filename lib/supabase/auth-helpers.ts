@@ -1,3 +1,5 @@
+import { logInfo } from "@/lib/logger"
+
 const PRODUCTION_SITE_URL = "https://saas.multihuman.com.br"
 
 function isLocalOrigin(origin: string) {
@@ -26,7 +28,7 @@ export function getAuthRedirectUrls() {
   const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
 
   if (process.env.NODE_ENV === "development") {
-    console.log("Base URL para redirecionamento:", normalizedBaseUrl)
+    logInfo("AUTH_REDIRECT_BASE_URL", { normalizedBaseUrl })
   }
 
   return {
@@ -37,12 +39,12 @@ export function getAuthRedirectUrls() {
 
 export function logAuthRedirectUrls() {
   const urls = getAuthRedirectUrls()
-  console.log("=== URLs de Redirecionamento de Autenticacao ===")
-  console.log("Email Redirect:", urls.emailRedirectTo)
-  console.log("Reset Password Redirect:", urls.resetPasswordRedirectTo)
-  console.log("NEXT_PUBLIC_SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL)
-  console.log("window.location.origin:", typeof window !== "undefined" ? window.location.origin : "N/A (server)")
-  console.log("================================================")
+  logInfo("AUTH_REDIRECT_URLS", {
+    emailRedirectTo: urls.emailRedirectTo,
+    resetPasswordRedirectTo: urls.resetPasswordRedirectTo,
+    configuredSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    windowOrigin: typeof window !== "undefined" ? window.location.origin : "N/A (server)",
+  })
   return urls
 }
 

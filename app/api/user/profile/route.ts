@@ -32,8 +32,8 @@ export async function GET() {
     const currentUser = await requireUser()
 
     return NextResponse.json({
-      user: currentUser.user,
-      profile: currentUser.profile,
+      user: currentUser.profile,
+      profile: currentUser.settingsProfile,
     })
   } catch (error) {
     logApiError("api/user/profile GET", error)
@@ -53,8 +53,8 @@ export async function PUT(request: Request) {
       .from("profiles")
       .upsert(
         {
-          id: currentUser.user.id,
-          email: currentUser.user.email,
+          id: currentUser.profile.id,
+          email: currentUser.profile.email,
           ...(profileData.name !== undefined ? { name: profileData.name } : {}),
           ...cleanedProfileData,
           updated_at: new Date().toISOString(),
@@ -73,7 +73,7 @@ export async function PUT(request: Request) {
           name: profileData.name,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", currentUser.user.id)
+        .eq("id", currentUser.profile.id)
 
       if (userError) {
         throw userError
@@ -83,7 +83,7 @@ export async function PUT(request: Request) {
     const { data: refreshedProfile, error: refreshedProfileError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", currentUser.user.id)
+      .eq("id", currentUser.profile.id)
       .maybeSingle()
 
     if (refreshedProfileError) {
@@ -93,7 +93,7 @@ export async function PUT(request: Request) {
     const { data: refreshedUser, error: refreshedUserError } = await supabase
       .from("users")
       .select("*")
-      .eq("id", currentUser.user.id)
+      .eq("id", currentUser.profile.id)
       .single()
 
     if (refreshedUserError) {

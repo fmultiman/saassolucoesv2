@@ -11,9 +11,9 @@ export async function getCurrentApiUser() {
   }
 
   return {
-    user: currentUser.authUser,
-    userType: currentUser.user.user_type || "client",
-    profile: currentUser.user,
+    user: currentUser.auth,
+    userType: currentUser.profile.user_type || "client",
+    profile: currentUser.profile,
   }
 }
 
@@ -30,7 +30,7 @@ export async function requireSelfOrAdminApiUser(userId: string) {
   try {
     const currentUser = await requireUser()
 
-    if (currentUser.user.id !== userId && currentUser.user.user_type !== "admin") {
+    if (currentUser.profile.id !== userId && currentUser.profile.user_type !== "admin") {
       throw forbiddenError()
     }
 

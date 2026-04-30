@@ -8,6 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Loader2, CuboidIcon } from "lucide-react"
+import type { UserRow } from "@/types/app-user"
+import { redirectAfterLogin } from "@/lib/auth/redirectAfterLogin"
 import { supabase } from "@/lib/supabase/client"
 import { getAuthRedirectUrls } from "@/lib/supabase/auth-helpers"
 import { GoogleAuthButton } from "@/components/auth/google-auth-button"
@@ -24,9 +26,7 @@ const formSchema = z.object({
 })
 
 type CurrentProfileResponse = {
-  user?: {
-    user_type?: string | null
-  }
+  user?: UserRow
 }
 
 export default function AdminLoginPage() {
@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
         throw new Error("Voce nao tem permissao para acessar o painel administrativo.")
       }
 
-      window.location.href = redirectTo
+      window.location.href = redirectAfterLogin(profilePayload.user, { adminRedirectTo: redirectTo })
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : "Ocorreu um erro inesperado."
 

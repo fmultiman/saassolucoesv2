@@ -48,14 +48,14 @@ export async function POST(request: Request) {
     const payload = createUserSchema.parse(await request.json())
     const currentUser = await requireUser()
     const normalizedEmail = payload.email.trim().toLowerCase()
-    const isAdmin = currentUser.user.user_type === "admin"
+    const isAdmin = currentUser.profile.user_type === "admin"
 
     if (!isAdmin) {
-      if (currentUser.authUser.email?.toLowerCase() !== normalizedEmail || payload.tipoAcesso === "admin" || payload.forceCreate) {
+      if (currentUser.auth.email?.toLowerCase() !== normalizedEmail || payload.tipoAcesso === "admin" || payload.forceCreate) {
         throw forbiddenError()
       }
 
-      const synced = await syncAuthUserRecord(currentUser.authUser, {
+      const synced = await syncAuthUserRecord(currentUser.auth, {
         name: payload.nome,
         plan: payload.plano,
         userType: "client",
@@ -109,10 +109,10 @@ export async function PATCH(request: Request) {
   try {
     const currentUser = await requireUser()
     const payload = updateUserSchema.parse(await request.json())
-    const targetUserId = payload.id ?? currentUser.user.id
-    const isAdmin = currentUser.user.user_type === "admin"
+    const targetUserId = payload.id ?? currentUser.profile.id
+    const isAdmin = currentUser.profile.user_type === "admin"
 
-    if (!isAdmin && targetUserId !== currentUser.user.id) {
+    if (!isAdmin && targetUserId !== currentUser.profile.id) {
       throw forbiddenError()
     }
 
