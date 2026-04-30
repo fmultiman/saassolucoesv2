@@ -11,7 +11,6 @@ export const createClient = (): SupabaseClient<Database> => {
   if (typeof window === "undefined") {
     return createBrowserClient<Database>(supabaseUrl, supabaseKey, {
       auth: {
-        flowType: "pkce",
         detectSessionInUrl: true,
         persistSession: true,
         autoRefreshToken: true,
@@ -22,7 +21,6 @@ export const createClient = (): SupabaseClient<Database> => {
   if (!supabaseInstance) {
     supabaseInstance = createBrowserClient<Database>(supabaseUrl, supabaseKey, {
       auth: {
-        flowType: "pkce",
         detectSessionInUrl: true,
         persistSession: true,
         autoRefreshToken: true,
