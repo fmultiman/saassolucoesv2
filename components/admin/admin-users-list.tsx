@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Edit, Mail, MoreHorizontal, Trash2 } from "lucide-react"
@@ -45,10 +46,12 @@ interface AdminUsersListProps {
 }
 
 export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null)
   const { toast } = useToast()
 
   const formatLastActivity = (date?: string) => {
@@ -137,6 +140,7 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
       }
 
       setUsers((current) => current.filter((user) => user.id !== userToDelete.id))
+      router.refresh()
       toast({
         title: "Usuário excluído",
         description: `${userToDelete.name} foi removido com sucesso.`,
@@ -195,7 +199,10 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
                   <TableCell className="hidden md:table-cell">{user.active_solutions}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatLastActivity(user.last_sign_in_at)}</TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
+                    <DropdownMenu
+                      open={openMenuUserId === user.id}
+                      onOpenChange={(open) => setOpenMenuUserId(open ? user.id : null)}
+                    >
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                           <span className="sr-only">Abrir menu</span>
@@ -210,8 +217,8 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
                           Reenviar e-mail de acesso
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onSelect={(event) => {
-                            event.preventDefault()
+                          onSelect={() => {
+                            setOpenMenuUserId(null)
                             window.setTimeout(() => setEditingUser(user), 0)
                           }}
                         >
@@ -220,8 +227,8 @@ export function AdminUsersList({ initialUsers }: AdminUsersListProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
-                          onSelect={(event) => {
-                            event.preventDefault()
+                          onSelect={() => {
+                            setOpenMenuUserId(null)
                             window.setTimeout(() => setUserToDelete(user), 0)
                           }}
                         >

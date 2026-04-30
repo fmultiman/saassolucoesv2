@@ -101,6 +101,7 @@ export function AdminTransactionsList() {
   const [selectedTransaction, setSelectedTransaction] = useState<(typeof transactions)[number] | null>(null)
   const [dialogMode, setDialogMode] = useState<"details" | "receipt" | null>(null)
   const [copied, setCopied] = useState(false)
+  const [openMenuTransactionId, setOpenMenuTransactionId] = useState<string | null>(null)
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -150,6 +151,7 @@ export function AdminTransactionsList() {
   }
 
   const openDialog = (mode: "details" | "receipt", transaction: (typeof transactions)[number]) => {
+    setOpenMenuTransactionId(null)
     setSelectedTransaction(transaction)
     setCopied(false)
     window.setTimeout(() => setDialogMode(mode), 0)
@@ -243,7 +245,10 @@ export function AdminTransactionsList() {
                       <Button variant="ghost" size="icon" title="Visualizar" onClick={() => openDialog("details", transaction)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <DropdownMenu>
+                      <DropdownMenu
+                        open={openMenuTransactionId === transaction.id}
+                        onOpenChange={(open) => setOpenMenuTransactionId(open ? transaction.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
@@ -253,8 +258,7 @@ export function AdminTransactionsList() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openDialog("receipt", transaction)
                             }}
                           >
@@ -262,8 +266,7 @@ export function AdminTransactionsList() {
                             Baixar recibo
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openDialog("details", transaction)
                             }}
                           >

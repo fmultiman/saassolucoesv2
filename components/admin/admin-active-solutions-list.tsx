@@ -73,6 +73,7 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null)
   const [solutionToDeactivate, setSolutionToDeactivate] = useState<Solution | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [openMenuSolutionId, setOpenMenuSolutionId] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchSolutionPlans = async (solutionId: string) => {
@@ -136,6 +137,7 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
   )
 
   const openModal = (type: ModalType, solution: Solution) => {
+    setOpenMenuSolutionId(null)
     setSelectedSolution(solution)
     window.setTimeout(() => setActiveModal(type), 0)
   }
@@ -279,7 +281,10 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
                       </div>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
+                      <DropdownMenu
+                        open={openMenuSolutionId === solution.id}
+                        onOpenChange={(open) => setOpenMenuSolutionId(open ? solution.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
@@ -289,8 +294,7 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openModal("metrics", solution)
                             }}
                           >
@@ -298,8 +302,7 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
                             <span>Ver métricas</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openModal("clients", solution)
                             }}
                           >
@@ -308,8 +311,7 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openModal("settings", solution)
                             }}
                           >
@@ -318,8 +320,8 @@ export function AdminActiveSolutionsList({ filter }: AdminActiveSolutionsListPro
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
+                              setOpenMenuSolutionId(null)
                               window.setTimeout(() => setSolutionToDeactivate(solution), 0)
                             }}
                           >

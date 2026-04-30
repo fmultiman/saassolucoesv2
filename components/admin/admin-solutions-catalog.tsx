@@ -81,6 +81,7 @@ export function AdminSolutionsCatalog() {
   const [solutionToDelete, setSolutionToDelete] = useState<Solution | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [planAssociations, setPlanAssociations] = useState<Record<number, number[]>>({})
+  const [openMenuSolutionId, setOpenMenuSolutionId] = useState<number | null>(null)
 
   const { toast } = useToast()
 
@@ -208,6 +209,7 @@ export function AdminSolutionsCatalog() {
 
   // Função para abrir o diálogo de edição
   const openEditDialog = (solution: Solution | null = null) => {
+    setOpenMenuSolutionId(null)
     if (solution) {
       setEditingSolution(solution)
       setNewSolution({
@@ -309,8 +311,9 @@ export function AdminSolutionsCatalog() {
 
   // Função para confirmar exclusão de uma solução
   const confirmDelete = (solution: Solution) => {
+    setOpenMenuSolutionId(null)
     setSolutionToDelete(solution)
-    setDeleteConfirmOpen(true)
+    window.setTimeout(() => setDeleteConfirmOpen(true), 0)
   }
 
   // Função para excluir uma solução
@@ -462,7 +465,10 @@ export function AdminSolutionsCatalog() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
+                    <DropdownMenu
+                      open={openMenuSolutionId === solution.id}
+                      onOpenChange={(open) => setOpenMenuSolutionId(open ? solution.id : null)}
+                    >
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
@@ -471,12 +477,12 @@ export function AdminSolutionsCatalog() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => openEditDialog(solution)}>
+                        <DropdownMenuItem onSelect={() => openEditDialog(solution)}>
                           <Edit className="mr-2 h-4 w-4" />
                           <span>Editar</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={() => confirmDelete(solution)}>
+                        <DropdownMenuItem className="text-red-600" onSelect={() => confirmDelete(solution)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Excluir</span>
                         </DropdownMenuItem>

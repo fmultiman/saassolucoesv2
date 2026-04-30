@@ -116,6 +116,7 @@ export function AdminTemplatesList() {
   const [selectedTemplate, setSelectedTemplate] = useState<(typeof templates)[number] | null>(null)
   const [dialogMode, setDialogMode] = useState<"view" | "edit" | "duplicate" | null>(null)
   const [templateToDelete, setTemplateToDelete] = useState<(typeof templates)[number] | null>(null)
+  const [openMenuTemplateId, setOpenMenuTemplateId] = useState<string | null>(null)
   const [formValues, setFormValues] = useState({
     name: "",
     category: "relatorios",
@@ -160,6 +161,7 @@ export function AdminTemplatesList() {
   }
 
   const openDialog = (mode: "view" | "edit" | "duplicate", template: (typeof templates)[number]) => {
+    setOpenMenuTemplateId(null)
     setSelectedTemplate(template)
     setFormValues({
       name: mode === "duplicate" ? `${template.name} - Cópia` : template.name,
@@ -277,7 +279,10 @@ export function AdminTemplatesList() {
                     <TableCell>{template.lastUpdated}</TableCell>
                     <TableCell>{template.usage} vezes</TableCell>
                     <TableCell>
-                      <DropdownMenu>
+                      <DropdownMenu
+                        open={openMenuTemplateId === template.id}
+                        onOpenChange={(open) => setOpenMenuTemplateId(open ? template.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
@@ -287,8 +292,7 @@ export function AdminTemplatesList() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openDialog("view", template)
                             }}
                           >
@@ -296,8 +300,7 @@ export function AdminTemplatesList() {
                             <span>Visualizar</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openDialog("edit", template)
                             }}
                           >
@@ -305,8 +308,7 @@ export function AdminTemplatesList() {
                             <span>Editar</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
                               openDialog("duplicate", template)
                             }}
                           >
@@ -316,8 +318,8 @@ export function AdminTemplatesList() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-red-600"
-                            onSelect={(event) => {
-                              event.preventDefault()
+                            onSelect={() => {
+                              setOpenMenuTemplateId(null)
                               window.setTimeout(() => setTemplateToDelete(template), 0)
                             }}
                           >

@@ -42,6 +42,7 @@ export function AdminPlansList() {
   const [isSolutionsDialogOpen, setIsSolutionsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null)
+  const [openMenuPlanId, setOpenMenuPlanId] = useState<number | null>(null)
   const [newPlan, setNewPlan] = useState({
     name: "",
     description: "",
@@ -160,6 +161,7 @@ export function AdminPlansList() {
   }
 
   const openSolutionsDialog = (plan: Plan) => {
+    setOpenMenuPlanId(null)
     setEditingPlan(plan)
     window.setTimeout(() => {
       setIsSolutionsDialogOpen(true)
@@ -167,6 +169,7 @@ export function AdminPlansList() {
   }
 
   const confirmDelete = (plan: Plan) => {
+    setOpenMenuPlanId(null)
     setPlanToDelete(plan)
     window.setTimeout(() => {
       setIsDeleteDialogOpen(true)
@@ -348,7 +351,10 @@ export function AdminPlansList() {
                       <Button variant="ghost" size="icon" title="Editar" onClick={() => openEditDialog(plan)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <DropdownMenu>
+                      <DropdownMenu
+                        open={openMenuPlanId === plan.id}
+                        onOpenChange={(open) => setOpenMenuPlanId(open ? plan.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
@@ -357,11 +363,11 @@ export function AdminPlansList() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => openSolutionsDialog(plan)}>
+                          <DropdownMenuItem onSelect={() => openSolutionsDialog(plan)}>
                             <Check className="mr-2 h-4 w-4" />
                             Gerenciar Soluções
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => confirmDelete(plan)}>
+                          <DropdownMenuItem onSelect={() => confirmDelete(plan)}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir
                           </DropdownMenuItem>
