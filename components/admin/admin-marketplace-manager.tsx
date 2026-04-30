@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { BarChart2, Check, Edit, Eye, EyeOff, Plus, Search, Trash2, X } from "lucide-react"
-import { marketplaceProducts } from "./admin-marketplace-data"
+import { marketplaceProducts as fallbackMarketplaceProducts } from "./admin-marketplace-data"
+import type { AdminMarketplaceItem } from "@/lib/services/marketplace-service"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,24 +33,78 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 
-type MarketplaceProduct = (typeof marketplaceProducts)[number]
+function createEmptyProduct(): AdminMarketplaceItem {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    description: "",
+    fullDescription: "",
+    category: "service",
+    relatedArea: "all-areas",
+    minPlan: "free",
+    status: "active",
+    clientAction: "Ver mais",
+    showInstitutional: true,
+    showDashboard: true,
+    views: 0,
+    clicks: 0,
+    activations: 0,
+    lastAccess: null,
+    type: "service",
+    categories: ["service"],
+    requiresLogin: false,
+    displayStatus: "available",
+  }
+}
 
 export function AdminMarketplaceManager() {
-  const [products, setProducts] = useState(marketplaceProducts)
-  const [filteredProducts, setFilteredProducts] = useState(marketplaceProducts)
+  const [products, setProducts] = useState<AdminMarketplaceItem[]>(fallbackMarketplaceProducts)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [areaFilter, setAreaFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [planFilter, setPlanFilter] = useState("all")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [currentProduct, setCurrentProduct] = useState<MarketplaceProduct | null>(null)
+  const [currentProduct, setCurrentProduct] = useState<AdminMarketplaceItem | null>(null)
   const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false)
-  const [currentStats, setCurrentStats] = useState<MarketplaceProduct | null>(null)
-  const [productToDelete, setProductToDelete] = useState<MarketplaceProduct | null>(null)
+  const [currentStats, setCurrentStats] = useState<AdminMarketplaceItem | null>(null)
+  const [productToDelete, setProductToDelete] = useState<AdminMarketplaceItem | null>(null)
 
-  const filterProducts = (nextProducts = products) => {
-    let filtered = [...nextProducts]
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadProducts() {
+      try {
+        const response = await fetch("/api/admin/marketplace", {
+          method: "GET",
+          cache: "no-store",
+        })
+
+        if (!response.ok) {
+          throw new Error(`Erro ao carregar marketplace: ${response.status}`)
+        }
+
+        const payload = (await response.json()) as AdminMarketplaceItem[]
+
+        if (isMounted && Array.isArray(payload)) {
+          setProducts(payload)
+        }
+      } catch {
+        if (isMounted) {
+          setProducts(fallbackMarketplaceProducts)
+        }
+      }
+    }
+
+    void loadProducts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products]
 
     if (searchTerm) {
       filtered = filtered.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -71,67 +126,87 @@ export function AdminMarketplaceManager() {
       filtered = filtered.filter((product) => product.minPlan === planFilter)
     }
 
-    setFilteredProducts(filtered)
-  }
+    return filtered
+  }, [areaFilter, categoryFilter, planFilter, products, searchTerm, statusFilter])
 
-  const openEditDialog = (product: MarketplaceProduct) => {
+  const openEditDialog = (product: AdminMarketplaceItem) => {
     setCurrentProduct({ ...product })
     setIsDialogOpen(true)
   }
 
   const openCreateDialog = () => {
-    setCurrentProduct({
-      id: Date.now().toString(),
-      name: "",
-      description: "",
-      fullDescription: "",
-      category: "",
-      relatedArea: "",
-      minPlan: "free",
-      status: "active",
-      clientAction: "",
-      showInstitutional: true,
-      showDashboard: true,
-      views: 0,
-      clicks: 0,
-      activations: 0,
-      lastAccess: null,
-    })
+    setCurrentProduct(createEmptyProduct())
     setIsDialogOpen(true)
   }
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     if (!currentProduct) return
 
-    const isNewProduct = !products.find((product) => product.id === currentProduct.id)
-    const nextProducts = isNewProduct
-      ? [...products, currentProduct]
-      : products.map((product) => (product.id === currentProduct.id ? currentProduct : product))
+    const isNewProduct = !products.some((product) => product.id === currentProduct.id)
+    const endpoint = isNewProduct ? "/api/admin/marketplace" : `/api/admin/marketplace/${currentProduct.id}`
+    const method = isNewProduct ? "POST" : "PATCH"
 
-    setProducts(nextProducts)
+    const response = await fetch(endpoint, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(currentProduct),
+    })
+
+    if (!response.ok) {
+      return
+    }
+
+    const savedProduct = (await response.json()) as AdminMarketplaceItem
+
+    setProducts((currentProducts) =>
+      isNewProduct
+        ? [...currentProducts, savedProduct]
+        : currentProducts.map((product) => (product.id === savedProduct.id ? savedProduct : product)),
+    )
+    setCurrentProduct(savedProduct)
     setIsDialogOpen(false)
-    filterProducts(nextProducts)
   }
 
-  const deleteProduct = () => {
+  const deleteProduct = async () => {
     if (!productToDelete) return
 
-    const nextProducts = products.filter((product) => product.id !== productToDelete.id)
-    setProducts(nextProducts)
+    const response = await fetch(`/api/admin/marketplace/${productToDelete.id}`, {
+      method: "DELETE",
+    })
+
+    if (!response.ok) {
+      return
+    }
+
+    setProducts((currentProducts) => currentProducts.filter((product) => product.id !== productToDelete.id))
     setProductToDelete(null)
-    filterProducts(nextProducts)
   }
 
-  const toggleVisibility = (id: string, field: "showInstitutional" | "showDashboard") => {
-    const nextProducts = products.map((product) =>
-      product.id === id ? { ...product, [field]: !product[field] } : product,
-    )
+  const toggleVisibility = async (id: string, field: "showInstitutional" | "showDashboard") => {
+    const existingProduct = products.find((product) => product.id === id)
 
-    setProducts(nextProducts)
-    filterProducts(nextProducts)
+    if (!existingProduct) return
+
+    const nextProduct = { ...existingProduct, [field]: !existingProduct[field] }
+    const response = await fetch(`/api/admin/marketplace/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(nextProduct),
+    })
+
+    if (!response.ok) {
+      return
+    }
+
+    const savedProduct = (await response.json()) as AdminMarketplaceItem
+    setProducts((currentProducts) => currentProducts.map((product) => (product.id === id ? savedProduct : product)))
   }
 
-  const showStats = (product: MarketplaceProduct) => {
+  const showStats = (product: AdminMarketplaceItem) => {
     setCurrentStats(product)
     setIsStatsDialogOpen(true)
   }
@@ -146,43 +221,28 @@ export function AdminMarketplaceManager() {
               placeholder="Buscar produtos..."
               className="pl-8"
               value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value)
-                window.setTimeout(() => filterProducts(), 300)
-              }}
+              onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <Select
-            value={categoryFilter}
-            onValueChange={(value) => {
-              setCategoryFilter(value)
-              window.setTimeout(() => filterProducts(), 100)
-            }}
-          >
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full md:w-40">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas categorias</SelectItem>
-              <SelectItem value="integration">Integração Externa</SelectItem>
+              <SelectItem value="integration">Integracao Externa</SelectItem>
               <SelectItem value="template">Template Inteligente</SelectItem>
-              <SelectItem value="service">Serviço Personalizado</SelectItem>
+              <SelectItem value="service">Servico Personalizado</SelectItem>
               <SelectItem value="capacity">Capacidade Extra</SelectItem>
               <SelectItem value="plan">Plano / Upgrade</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={areaFilter}
-            onValueChange={(value) => {
-              setAreaFilter(value)
-              window.setTimeout(() => filterProducts(), 100)
-            }}
-          >
+          <Select value={areaFilter} onValueChange={setAreaFilter}>
             <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="Área" />
+              <SelectValue placeholder="Area" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas áreas</SelectItem>
+              <SelectItem value="all">Todas areas</SelectItem>
               <SelectItem value="atendimento">Atendimento</SelectItem>
               <SelectItem value="agendamento">Agendamento</SelectItem>
               <SelectItem value="vendas">Vendas</SelectItem>
@@ -190,13 +250,7 @@ export function AdminMarketplaceManager() {
               <SelectItem value="all-areas">Todas</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value)
-              window.setTimeout(() => filterProducts(), 100)
-            }}
-          >
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full md:w-40">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -207,20 +261,14 @@ export function AdminMarketplaceManager() {
               <SelectItem value="hidden">Oculto</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={planFilter}
-            onValueChange={(value) => {
-              setPlanFilter(value)
-              window.setTimeout(() => filterProducts(), 100)
-            }}
-          >
+          <Select value={planFilter} onValueChange={setPlanFilter}>
             <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="Plano mínimo" />
+              <SelectValue placeholder="Plano minimo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos planos</SelectItem>
               <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="basic">Básico</SelectItem>
+              <SelectItem value="basic">Basico</SelectItem>
               <SelectItem value="pro">Pro</SelectItem>
               <SelectItem value="enterprise">Enterprise</SelectItem>
             </SelectContent>
@@ -237,14 +285,14 @@ export function AdminMarketplaceManager() {
             <TableRow>
               <TableHead>Nome do Produto</TableHead>
               <TableHead className="hidden md:table-cell">Categoria</TableHead>
-              <TableHead className="hidden md:table-cell">Área</TableHead>
-              <TableHead className="hidden md:table-cell">Plano Mín.</TableHead>
+              <TableHead className="hidden md:table-cell">Area</TableHead>
+              <TableHead className="hidden md:table-cell">Plano Min.</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="hidden lg:table-cell">Ação Cliente</TableHead>
+              <TableHead className="hidden lg:table-cell">Acao Cliente</TableHead>
               <TableHead className="hidden lg:table-cell">Institucional</TableHead>
               <TableHead className="hidden lg:table-cell">Dashboard</TableHead>
-              <TableHead className="hidden lg:table-cell">Métricas</TableHead>
-              <TableHead>Ações</TableHead>
+              <TableHead className="hidden lg:table-cell">Metricas</TableHead>
+              <TableHead>Acoes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -307,10 +355,10 @@ export function AdminMarketplaceManager() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{currentProduct?.id ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+            <DialogTitle>{currentProduct && products.some((product) => product.id === currentProduct.id) ? "Editar Produto" : "Novo Produto"}</DialogTitle>
             <DialogDescription>
-              {currentProduct?.id
-                ? "Edite as informações do produto do marketplace."
+              {currentProduct && products.some((product) => product.id === currentProduct.id)
+                ? "Edite as informacoes do produto do marketplace."
                 : "Adicione um novo produto ao marketplace."}
             </DialogDescription>
           </DialogHeader>
@@ -329,15 +377,22 @@ export function AdminMarketplaceManager() {
                   <Label htmlFor="category">Categoria</Label>
                   <Select
                     value={currentProduct.category}
-                    onValueChange={(value) => setCurrentProduct({ ...currentProduct, category: value })}
+                    onValueChange={(value) =>
+                      setCurrentProduct({
+                        ...currentProduct,
+                        category: value,
+                        type: value === "integration" ? "integration" : value,
+                        categories: Array.from(new Set([value, ...currentProduct.categories.filter((item) => item !== currentProduct.category)])),
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="integration">Integração Externa</SelectItem>
+                      <SelectItem value="integration">Integracao Externa</SelectItem>
                       <SelectItem value="template">Template Inteligente</SelectItem>
-                      <SelectItem value="service">Serviço Personalizado</SelectItem>
+                      <SelectItem value="service">Servico Personalizado</SelectItem>
                       <SelectItem value="capacity">Capacidade Extra</SelectItem>
                       <SelectItem value="plan">Plano / Upgrade</SelectItem>
                     </SelectContent>
@@ -346,7 +401,7 @@ export function AdminMarketplaceManager() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição Curta</Label>
+                <Label htmlFor="description">Descricao Curta</Label>
                 <Input
                   id="description"
                   value={currentProduct.description}
@@ -355,7 +410,7 @@ export function AdminMarketplaceManager() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullDescription">Descrição Completa</Label>
+                <Label htmlFor="fullDescription">Descricao Completa</Label>
                 <Textarea
                   id="fullDescription"
                   rows={4}
@@ -366,13 +421,13 @@ export function AdminMarketplaceManager() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="relatedArea">Área Relacionada</Label>
+                  <Label htmlFor="relatedArea">Area Relacionada</Label>
                   <Select
                     value={currentProduct.relatedArea}
                     onValueChange={(value) => setCurrentProduct({ ...currentProduct, relatedArea: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a área" />
+                      <SelectValue placeholder="Selecione a area" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="atendimento">Atendimento</SelectItem>
@@ -384,7 +439,7 @@ export function AdminMarketplaceManager() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="minPlan">Plano Mínimo</Label>
+                  <Label htmlFor="minPlan">Plano Minimo</Label>
                   <Select
                     value={currentProduct.minPlan}
                     onValueChange={(value) => setCurrentProduct({ ...currentProduct, minPlan: value })}
@@ -394,7 +449,7 @@ export function AdminMarketplaceManager() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="basic">Básico</SelectItem>
+                      <SelectItem value="basic">Basico</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
                       <SelectItem value="enterprise">Enterprise</SelectItem>
                     </SelectContent>
@@ -407,7 +462,13 @@ export function AdminMarketplaceManager() {
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={currentProduct.status}
-                    onValueChange={(value) => setCurrentProduct({ ...currentProduct, status: value })}
+                    onValueChange={(value) =>
+                      setCurrentProduct({
+                        ...currentProduct,
+                        status: value,
+                        displayStatus: value === "coming-soon" ? "coming-soon" : currentProduct.displayStatus,
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o status" />
@@ -420,7 +481,7 @@ export function AdminMarketplaceManager() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientAction">Botão de Ação do Cliente</Label>
+                  <Label htmlFor="clientAction">Botao de Acao do Cliente</Label>
                   <Input
                     id="clientAction"
                     value={currentProduct.clientAction}
@@ -454,7 +515,7 @@ export function AdminMarketplaceManager() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={saveProduct}>Salvar</Button>
+            <Button onClick={() => void saveProduct()}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -462,25 +523,25 @@ export function AdminMarketplaceManager() {
       <Dialog open={isStatsDialogOpen} onOpenChange={setIsStatsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Estatísticas do Produto</DialogTitle>
-            <DialogDescription>Métricas de desempenho para: {currentStats?.name}</DialogDescription>
+            <DialogTitle>Estatisticas do Produto</DialogTitle>
+            <DialogDescription>Metricas de desempenho para: {currentStats?.name}</DialogDescription>
           </DialogHeader>
           {currentStats && (
             <Tabs defaultValue="overview">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="overview">Visao Geral</TabsTrigger>
                 <TabsTrigger value="details">Detalhes</TabsTrigger>
               </TabsList>
               <TabsContent value="overview">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Visualizações</CardTitle>
+                      <CardTitle className="text-sm font-medium">Visualizacoes</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{currentStats.views}</div>
                       <p className="text-xs text-muted-foreground">
-                        +{Math.floor(Math.random() * 20)}% em relação ao mês anterior
+                        +{Math.floor(Math.random() * 20)}% em relacao ao mes anterior
                       </p>
                     </CardContent>
                   </Card>
@@ -491,18 +552,18 @@ export function AdminMarketplaceManager() {
                     <CardContent>
                       <div className="text-2xl font-bold">{currentStats.clicks}</div>
                       <p className="text-xs text-muted-foreground">
-                        Taxa de conversão: {Math.floor((currentStats.clicks / Math.max(currentStats.views, 1)) * 100)}%
+                        Taxa de conversao: {Math.floor((currentStats.clicks / Math.max(currentStats.views, 1)) * 100)}%
                       </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Ativações</CardTitle>
+                      <CardTitle className="text-sm font-medium">Ativacoes</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{currentStats.activations}</div>
                       <p className="text-xs text-muted-foreground">
-                        Último acesso:{" "}
+                        Ultimo acesso:{" "}
                         {currentStats.lastAccess ? new Date(currentStats.lastAccess).toLocaleDateString() : "Nunca"}
                       </p>
                     </CardContent>
@@ -512,13 +573,13 @@ export function AdminMarketplaceManager() {
               <TabsContent value="details">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Histórico de Uso</CardTitle>
-                    <CardDescription>Detalhes de uso e ativações do produto ao longo do tempo.</CardDescription>
+                    <CardTitle>Historico de Uso</CardTitle>
+                    <CardDescription>Detalhes de uso e ativacoes do produto ao longo do tempo.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Total de visualizações</span>
+                        <span className="text-sm font-medium">Total de visualizacoes</span>
                         <span className="font-bold">{currentStats.views}</span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -526,24 +587,24 @@ export function AdminMarketplaceManager() {
                         <span className="font-bold">{currentStats.clicks}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Total de ativações</span>
+                        <span className="text-sm font-medium">Total de ativacoes</span>
                         <span className="font-bold">{currentStats.activations}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Taxa de conversão</span>
+                        <span className="text-sm font-medium">Taxa de conversao</span>
                         <span className="font-bold">
                           {Math.floor((currentStats.clicks / Math.max(currentStats.views, 1)) * 100)}%
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Último acesso</span>
+                        <span className="text-sm font-medium">Ultimo acesso</span>
                         <span className="font-bold">
                           {currentStats.lastAccess ? new Date(currentStats.lastAccess).toLocaleDateString() : "Nunca"}
                         </span>
                       </div>
                     </div>
                     <div className="pt-4">
-                      <h4 className="mb-2 text-sm font-medium">Usuários que ativaram</h4>
+                      <h4 className="mb-2 text-sm font-medium">Usuarios que ativaram</h4>
                       {currentStats.activations > 0 ? (
                         <div className="space-y-2">
                           {Array.from({ length: Math.min(currentStats.activations, 5) }).map((_, index) => (
@@ -551,7 +612,7 @@ export function AdminMarketplaceManager() {
                               <div className="flex items-center gap-2">
                                 <div className="h-8 w-8 rounded-full bg-primary/20" />
                                 <div>
-                                  <p className="text-sm font-medium">Usuário {index + 1}</p>
+                                  <p className="text-sm font-medium">Usuario {index + 1}</p>
                                   <p className="text-xs text-muted-foreground">
                                     Ativado em: {new Date(Date.now() - index * 86400000).toLocaleDateString()}
                                   </p>
@@ -562,7 +623,7 @@ export function AdminMarketplaceManager() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Nenhum usuário ativou este produto ainda.</p>
+                        <p className="text-sm text-muted-foreground">Nenhum usuario ativou este produto ainda.</p>
                       )}
                     </div>
                   </CardContent>
@@ -578,14 +639,14 @@ export function AdminMarketplaceManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir produto</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{productToDelete?.name}</strong>? Essa ação remove o produto desta
-              gestão administrativa.
+              Tem certeza que deseja excluir <strong>{productToDelete?.name}</strong>? Essa acao remove o produto desta
+              gestao administrativa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={deleteProduct}
+              onClick={() => void deleteProduct()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
@@ -599,9 +660,9 @@ export function AdminMarketplaceManager() {
 
 function getCategoryLabel(category: string) {
   const categories: Record<string, string> = {
-    integration: "Integração Externa",
+    integration: "Integracao Externa",
     template: "Template Inteligente",
-    service: "Serviço Personalizado",
+    service: "Servico Personalizado",
     capacity: "Capacidade Extra",
     plan: "Plano / Upgrade",
   }
@@ -622,7 +683,7 @@ function getAreaLabel(area: string) {
 function getPlanLabel(plan: string) {
   const plans: Record<string, string> = {
     free: "Free",
-    basic: "Básico",
+    basic: "Basico",
     pro: "Pro",
     enterprise: "Enterprise",
   }

@@ -166,6 +166,30 @@ type EmailVerificationRow = {
   updated_at: string | null
 }
 
+type MarketplaceItemRow = {
+  id: string
+  name: string
+  description: string
+  type: string | null
+  categories: string[] | null
+  status: string | null
+  requires_login: boolean | null
+  created_at: string | null
+  views: number | null
+  clicks: number | null
+  activations: number | null
+  last_access: string | null
+  full_description: string | null
+  category: string | null
+  related_area: string | null
+  min_plan: string | null
+  client_action: string | null
+  show_institutional: boolean | null
+  show_dashboard: boolean | null
+  display_status: string | null
+  updated_at: string | null
+}
+
 type MigrationRow = {
   id: string
   filename: string
@@ -256,6 +280,11 @@ export type Database = {
         ]
       >
       email_verification: TableDefinition<EmailVerificationRow, Partial<EmailVerificationRow> & Pick<EmailVerificationRow, "email">>
+      marketplace_items: TableDefinition<
+        MarketplaceItemRow,
+        Partial<MarketplaceItemRow> & Pick<MarketplaceItemRow, "id" | "name" | "description">,
+        Partial<MarketplaceItemRow>
+      >
       migrations: TableDefinition<MigrationRow, Partial<MigrationRow> & Pick<MigrationRow, "filename" | "status">>
       _migrations: TableDefinition<InternalMigrationRow>
     }

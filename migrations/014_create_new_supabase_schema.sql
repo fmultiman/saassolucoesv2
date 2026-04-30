@@ -162,6 +162,30 @@ create table if not exists public.email_verification (
   updated_at timestamptz default now()
 );
 
+create table if not exists public.marketplace_items (
+  id text primary key,
+  name text not null,
+  description text not null,
+  type text not null default 'service',
+  categories text[] not null default '{}',
+  status text not null default 'active',
+  requires_login boolean not null default false,
+  created_at timestamptz default now(),
+  views integer not null default 0,
+  clicks integer not null default 0,
+  activations integer not null default 0,
+  last_access timestamptz,
+  full_description text,
+  category text,
+  related_area text,
+  min_plan text default 'free',
+  client_action text default 'Ver mais',
+  show_institutional boolean not null default true,
+  show_dashboard boolean not null default true,
+  display_status text not null default 'available',
+  updated_at timestamptz default now()
+);
+
 create table if not exists public.migrations (
   id uuid primary key default gen_random_uuid(),
   filename text not null,
@@ -283,6 +307,7 @@ alter table public.posts enable row level security;
 alter table public.notifications enable row level security;
 alter table public.user_notifications enable row level security;
 alter table public.email_verification enable row level security;
+alter table public.marketplace_items enable row level security;
 alter table public.migrations enable row level security;
 
 create policy "Public can read active solutions" on public.solutions
@@ -293,6 +318,8 @@ create policy "Public can read plan solutions" on public.plan_solutions
   for select using (true);
 create policy "Public can read published posts" on public.posts
   for select using (publicado = true);
+create policy "Public can read visible marketplace items" on public.marketplace_items
+  for select using (status <> 'hidden' and (show_institutional = true or show_dashboard = true));
 
 create policy "Users can read own user" on public.users
   for select using (auth.uid() = id);
@@ -304,6 +331,6 @@ create policy "Users can update own profile" on public.profiles
   for update using (auth.uid() = id);
 
 grant usage on schema public to anon, authenticated, service_role;
-grant select on public.solutions, public.plans, public.plan_solutions, public.posts to anon, authenticated;
+grant select on public.solutions, public.plans, public.plan_solutions, public.posts, public.marketplace_items to anon, authenticated;
 grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
