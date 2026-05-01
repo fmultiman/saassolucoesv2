@@ -10,15 +10,34 @@ type SendEmailInput = {
 
 function resolveSmtpConfig() {
   const host = process.env.SMTP_HOST
-  const port = Number.parseInt(process.env.SMTP_PORT || "587", 10)
+  const rawPort = process.env.SMTP_PORT
+  const port = Number.parseInt(rawPort || "587", 10)
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
   const secure = process.env.SMTP_SECURE === "true" || port === 465
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_FROM || user
+  const fromEmail = process.env.SMTP_FROM_EMAIL
   const fromName = process.env.SMTP_FROM_NAME || "SaaS Solucoes"
 
-  if (!host || !user || !pass || !fromEmail) {
-    throw new Error("Configuracao SMTP incompleta. Defina SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS e SMTP_FROM_EMAIL.")
+  const missingEnvVars = [
+    !host ? "SMTP_HOST" : null,
+    !rawPort ? "SMTP_PORT" : null,
+    !user ? "SMTP_USER" : null,
+    !pass ? "SMTP_PASS" : null,
+    !fromEmail ? "SMTP_FROM_EMAIL" : null,
+  ].filter((value): value is string => value !== null)
+
+  if (missingEnvVars.length > 0) {
+    logError("SMTP_CONFIG_MISSING", {
+      missingEnvVars,
+    })
+    throw new Error(`Configuracao SMTP incompleta. Defina: ${missingEnvVars.join(", ")}.`)
+  }
+
+  if (Number.isNaN(port)) {
+    logError("SMTP_CONFIG_INVALID_PORT", {
+      smtpPort: rawPort,
+    })
+    throw new Error("Configuracao SMTP invalida. SMTP_PORT precisa ser numerico.")
   }
 
   return {
