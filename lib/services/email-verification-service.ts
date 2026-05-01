@@ -1,7 +1,8 @@
 import { randomBytes } from "crypto"
-import nodemailer from "nodemailer"
 import { SITE_URL } from "@/lib/constants"
+import { logError, logInfo } from "@/lib/logger"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { sendEmail } from "./email-service"
 import { invalidateUserCache } from "./user-service"
 
 export interface EmailVerificationToken {
@@ -21,31 +22,6 @@ function generateToken(): string {
 function buildVerificationLink(token: string) {
   const normalizedBaseUrl = SITE_URL.endsWith("/") ? SITE_URL.slice(0, -1) : SITE_URL
   return `${normalizedBaseUrl}/verificar-email?token=${encodeURIComponent(token)}`
-}
-
-function resolveSmtpConfig() {
-  const host = process.env.SMTP_HOST
-  const port = Number.parseInt(process.env.SMTP_PORT || "587", 10)
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-  const secure = process.env.SMTP_SECURE === "true" || port === 465
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_FROM || user
-  const fromName = process.env.SMTP_FROM_NAME || "SaaS Solucoes"
-
-  if (!host || !user || !pass || !fromEmail) {
-    throw new Error("Configuracao SMTP incompleta. Defina SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS e SMTP_FROM_EMAIL.")
-  }
-
-  return {
-    host,
-    port,
-    secure,
-    auth: {
-      user,
-      pass,
-    },
-    from: `"${fromName}" <${fromEmail}>`,
-  }
 }
 
 function buildVerificationEmailContent(verificationLink: string) {
@@ -125,35 +101,26 @@ export async function requestEmailChange(userId: string, newEmail: string) {
     const verificationLink = buildVerificationLink(token)
     await sendVerificationEmail(normalizedEmail, verificationLink)
 
-    console.info("[email-change] verification email queued", { userId, email: normalizedEmail })
+    logInfo("EMAIL_CHANGE_REQUESTED", { userId, email: normalizedEmail })
 
     return { success: true }
   } catch (error) {
-    console.error("[email-change] failed to request email change", { userId, email: normalizedEmail, error })
+    logError("EMAIL_CHANGE_REQUEST_FAILED", { userId, email: normalizedEmail, error })
     throw error
   }
 }
 
 async function sendVerificationEmail(email: string, verificationLink: string) {
-  const smtp = resolveSmtpConfig()
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth: smtp.auth,
-  })
-
   const { subject, html, text } = buildVerificationEmailContent(verificationLink)
 
-  await transporter.sendMail({
-    from: smtp.from,
+  await sendEmail({
     to: email,
     subject,
     html,
     text,
   })
 
-  console.info("[email-change] verification email sent", { email })
+  logInfo("EMAIL_CHANGE_VERIFICATION_SENT", { email })
   return { success: true }
 }
 
@@ -175,12 +142,12 @@ export async function verifyEmailToken(token: string) {
     if (tokenError) throw tokenError
 
     if (!tokenRow) {
-      console.warn("[email-change] invalid or already used token", { token: normalizedToken })
+      logError("EMAIL_CHANGE_INVALID_TOKEN", { token: normalizedToken })
       throw new Error("invalid_token")
     }
 
     if (!tokenRow.user_id || !tokenRow.email) {
-      console.error("[email-change] token missing required fields", { tokenId: tokenRow.id })
+      logError("EMAIL_CHANGE_TOKEN_MISSING_FIELDS", { tokenId: tokenRow.id })
       throw new Error("invalid_token")
     }
 
@@ -196,7 +163,7 @@ export async function verifyEmailToken(token: string) {
     if (claimError) throw claimError
 
     if (!claimedToken) {
-      console.warn("[email-change] token reuse prevented", { tokenId: tokenRow.id })
+      logError("EMAIL_CHANGE_TOKEN_REUSE_PREVENTED", { tokenId: tokenRow.id })
       throw new Error("invalid_token")
     }
 
@@ -211,7 +178,7 @@ export async function verifyEmailToken(token: string) {
 
     if (authUpdateError) {
       await rollbackToken()
-      console.error("[email-change] failed to update auth email", { userId: tokenRow.user_id, error: authUpdateError })
+      logError("EMAIL_CHANGE_AUTH_UPDATE_FAILED", { userId: tokenRow.user_id, error: authUpdateError })
       throw authUpdateError
     }
 
@@ -225,7 +192,7 @@ export async function verifyEmailToken(token: string) {
 
     if (userUpdateError) {
       await rollbackToken()
-      console.error("[email-change] failed to update public.users email", { userId: tokenRow.user_id, error: userUpdateError })
+      logError("EMAIL_CHANGE_USER_UPDATE_FAILED", { userId: tokenRow.user_id, error: userUpdateError })
       throw userUpdateError
     }
 
@@ -239,13 +206,13 @@ export async function verifyEmailToken(token: string) {
 
     if (profileUpdateError) {
       await rollbackToken()
-      console.error("[email-change] failed to update profile email", { userId: tokenRow.user_id, error: profileUpdateError })
+      logError("EMAIL_CHANGE_PROFILE_UPDATE_FAILED", { userId: tokenRow.user_id, error: profileUpdateError })
       throw profileUpdateError
     }
 
     await invalidateUserCache(tokenRow.user_id)
 
-    console.info("[email-change] email updated successfully", { userId: tokenRow.user_id, email: tokenRow.email })
+    logInfo("EMAIL_CHANGE_COMPLETED", { userId: tokenRow.user_id, email: tokenRow.email })
 
     return {
       success: true,
@@ -257,7 +224,7 @@ export async function verifyEmailToken(token: string) {
       throw error
     }
 
-    console.error("[email-change] verification flow failed", { error })
+    logError("EMAIL_CHANGE_VERIFICATION_FAILED", { error })
     throw error
   }
 }
@@ -273,7 +240,7 @@ export async function getPendingEmailVerifications(userId: string) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("[email-change] failed to fetch pending verifications", { userId, error })
+    logError("EMAIL_CHANGE_PENDING_FETCH_FAILED", { userId, error })
     throw error
   }
 
@@ -286,7 +253,7 @@ export async function cancelEmailChange(tokenId: string) {
   const { error } = await supabase.from("email_verification").delete().eq("id", tokenId)
 
   if (error) {
-    console.error("[email-change] failed to cancel email change", { tokenId, error })
+    logError("EMAIL_CHANGE_CANCEL_FAILED", { tokenId, error })
     throw error
   }
 

@@ -104,6 +104,17 @@ export default function SignupPage() {
         throw new Error("Erro ao criar usuario")
       }
 
+      void fetch("/api/welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.user.email || email,
+          name,
+        }),
+      }).catch(() => {
+        // O email de boas-vindas e informativo e nao deve bloquear o cadastro.
+      })
+
       setSuccess(true)
     } catch (signupError) {
       setError(signupError instanceof Error ? signupError.message : "Ocorreu um erro ao fazer o cadastro")
